@@ -1,0 +1,104 @@
+name: CI notify result
+
+on:
+  workflow_call:
+    inputs:
+      service_label:
+        required: false
+        type: string
+        default: ""
+      test_result:
+        required: false
+        type: string
+        default: ""
+      docker_result:
+        required: false
+        type: string
+        default: ""
+      compose_result:
+        required: false
+        type: string
+        default: ""
+      deploy_result:
+        required: false
+        type: string
+        default: ""
+      notify_on_success:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      DEPLOY_HOST:
+        required: true
+      DEPLOY_USER:
+        required: true
+      DEPLOY_SSH_KEY:
+        required: true
+
+jobs:
+  notify-result:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Telegram — pipeline result
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: false
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            cd /opt/planning-poker-dev
+            if [[ -d .git ]]; then
+              git fetch --prune origin main
+              git checkout -B main origin/main
+            fi
+
+            TEST_RESULT="${{ inputs.test_result }}"
+            DOCKER_RESULT="${{ inputs.docker_result }}"
+            COMPOSE_RESULT="${{ inputs.compose_result }}"
+            DEPLOY_RESULT="${{ inputs.deploy_result }}"
+            NOTIFY_ON_SUCCESS="${{ inputs.notify_on_success }}"
+            EVENT_NAME="${{ github.event_name }}"
+
+            failed=false
+            for result in "$TEST_RESULT" "$DOCKER_RESULT" "$COMPOSE_RESULT" "$DEPLOY_RESULT"; do
+              if [[ "$result" == "failure" ]]; then
+                failed=true
+                break
+              fi
+            done
+
+            if [[ "$failed" == "false" && "$NOTIFY_ON_SUCCESS" != "true" ]]; then
+              echo "Pipeline succeeded; success alert disabled."
+              exit 0
+            fi
+
+            if [[ "$failed" == "false" && "$EVENT_NAME" == "pull_request" ]]; then
+              echo "Pull request pipeline succeeded; skipping success alert."
+              exit 0
+            fi
+
+            if [[ "$failed" == "true" ]]; then
+              STATUS="FAILED"
+              DETAILS="Один или несколько jobs завершились с ошибкой. Деплой мог не дойти до сервера."
+            else
+              STATUS="OK"
+              DETAILS="Все jobs GitHub Actions завершились успешно."
+            fi
+
+            export GITHUB_REPOSITORY="${{ github.repository }}"
+            export GITHUB_SHA="${{ github.sha }}"
+            export GITHUB_REF_NAME="${{ github.ref_name }}"
+            export GITHUB_ACTOR="${{ github.actor }}"
+            export GITHUB_RUN_ID="${{ github.run_id }}"
+            export GITHUB_EVENT_NAME="$EVENT_NAME"
+            export SERVICE_LABEL="${{ inputs.service_label }}"
+            export DEPLOY_SERVICE="${{ inputs.service_label }}"
+            export CI_TEST_RESULT="$TEST_RESULT"
+            export CI_DOCKER_RESULT="$DOCKER_RESULT"
+            export CI_COMPOSE_RESULT="$COMPOSE_RESULT"
+            export CI_DEPLOY_RESULT="$DEPLOY_RESULT"
+            export NOTIFY_EVENT="pipeline_result"
+            ./infra/deploy/github-actions-notify.sh "$STATUS" "$DETAILS"

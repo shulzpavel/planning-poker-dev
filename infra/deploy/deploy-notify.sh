@@ -122,6 +122,7 @@ deploy_notify_post() {
   DEPLOY_NOTIFY_TEXT="$text" TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" TELEGRAM_CHAT_ID="$TELEGRAM_CHAT_ID" python3 - <<'PY'
 import json
 import os
+import sys
 import urllib.request
 
 text = os.environ["DEPLOY_NOTIFY_TEXT"]
@@ -139,8 +140,8 @@ req = urllib.request.Request(
 )
 try:
     urllib.request.urlopen(req, timeout=20)
-except Exception:
-    pass
+except Exception as exc:
+    print(f"deploy_notify_post failed: {exc}", file=sys.stderr)
 PY
 }
 

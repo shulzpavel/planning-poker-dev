@@ -1,0 +1,46 @@
+name: CI notify start
+
+on:
+  workflow_call:
+    inputs:
+      service_label:
+        required: false
+        type: string
+        default: ""
+    secrets:
+      DEPLOY_HOST:
+        required: true
+      DEPLOY_USER:
+        required: true
+      DEPLOY_SSH_KEY:
+        required: true
+
+jobs:
+  notify-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Telegram — pipeline started
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: false
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            cd /opt/planning-poker-dev
+            if [[ -d .git ]]; then
+              git fetch --prune origin main
+              git checkout -B main origin/main
+            fi
+            export GITHUB_REPOSITORY="${{ github.repository }}"
+            export GITHUB_SHA="${{ github.sha }}"
+            export GITHUB_REF_NAME="${{ github.ref_name }}"
+            export GITHUB_ACTOR="${{ github.actor }}"
+            export GITHUB_RUN_ID="${{ github.run_id }}"
+            export GITHUB_EVENT_NAME="${{ github.event_name }}"
+            export SERVICE_LABEL="${{ inputs.service_label }}"
+            export DEPLOY_SERVICE="${{ inputs.service_label }}"
+            export NOTIFY_EVENT="pipeline_start"
+            ./infra/deploy/github-actions-notify.sh STARTED "Запущен CI/CD pipeline."

@@ -29,11 +29,6 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-deploy_acquire_lock "$ROOT_DIR"
-
-echo "Updating deploy scripts from planning-poker-dev..."
-deploy_sync_repo_main "$ROOT_DIR"
-
 deploy_notify_load_env "$ROOT_DIR"
 
 REPO_NAME="$(deploy_notify_service_repo "$SERVICE")"
@@ -50,6 +45,11 @@ notify_failure() {
 }
 
 trap notify_failure ERR
+
+deploy_acquire_lock "$ROOT_DIR"
+
+echo "Updating deploy scripts from planning-poker-dev..."
+deploy_sync_repo_main "$ROOT_DIR"
 
 deploy_notify_send "STARTED" "Сборка и перезапуск ${SERVICE}." "$ROOT_DIR"
 
