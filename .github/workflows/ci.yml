@@ -14,3 +14,23 @@ jobs:
         run: |
           docker compose config >/tmp/planning-poker-compose.yml
           docker compose -f docker-compose.prod.yml --env-file .env.example config >/tmp/planning-poker-prod-compose.yml
+
+  deploy:
+    name: Deploy to production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [compose]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          command_timeout: 25m
+          script: |
+            set -euo pipefail
+            cd /opt/planning-poker-dev
+            ./infra/deploy/deploy-prod.sh

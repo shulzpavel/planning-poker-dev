@@ -62,9 +62,9 @@ Install Docker Engine and Compose plugin using Docker's official apt repository.
 Clone the repo:
 
 ```bash
-mkdir -p /opt/planning-poker
-cd /opt/planning-poker
-git clone <repo-url> .
+mkdir -p /opt/planning-poker-dev
+cd /opt/planning-poker-dev
+git clone git@github.com:shulzpavel/planning-poker-dev.git .
 ```
 
 Create the env file:
@@ -99,7 +99,7 @@ Full-stack rollout (backend + web) — use this by default; any change in
 `backend/` only reaches production through it:
 
 ```bash
-cd /opt/planning-poker
+cd /opt/planning-poker-dev
 ./infra/deploy/deploy-prod.sh
 ```
 
@@ -183,7 +183,7 @@ On every push to `main`, CI runs tests and compose validation first. If they
 pass, the `deploy-web` job connects to the server over SSH and runs:
 
 ```bash
-cd /opt/planning-poker
+cd /opt/planning-poker-dev
 ./infra/deploy/deploy-prod.sh
 ```
 
