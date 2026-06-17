@@ -113,6 +113,15 @@ cd /opt/planning-poker-dev
 ./infra/deploy/deploy-web-prod.sh
 ```
 
+Single-service rollout (after a microservice repo push):
+
+```bash
+cd /opt/planning-poker-dev
+./infra/deploy/deploy-service-prod.sh voting-service   # or jira-service / web
+```
+
+Telegram deploy alerts include the service name, repository, and deployed commit SHA.
+
 > **Warning:** `deploy-web-prod.sh` rebuilds only the `web` container and
 > silently leaves backend services on the old image.
 

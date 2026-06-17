@@ -16,8 +16,10 @@ jobs:
           docker compose -f docker-compose.prod.yml --env-file .env.example config >/tmp/planning-poker-prod-compose.yml
 
   deploy:
-    name: Deploy to production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Deploy full stack to production
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
     needs: [compose]
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -33,4 +35,5 @@ jobs:
           script: |
             set -euo pipefail
             cd /opt/planning-poker-dev
+            export DEPLOY_TRIGGER="github:${{ github.repository }}@${{ github.sha }}"
             ./infra/deploy/deploy-prod.sh
