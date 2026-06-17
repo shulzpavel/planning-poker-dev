@@ -62,8 +62,8 @@ Install Docker Engine and Compose plugin using Docker's official apt repository.
 Clone the repo:
 
 ```bash
-mkdir -p /opt/planning-poker-dev
-cd /opt/planning-poker-dev
+mkdir -p /opt/planning-poker-dev-dev
+cd /opt/planning-poker-dev-dev
 git clone git@github.com:shulzpavel/planning-poker-dev.git .
 ```
 
@@ -99,7 +99,7 @@ Full-stack rollout (backend + web) — use this by default; any change in
 `backend/` only reaches production through it:
 
 ```bash
-cd /opt/planning-poker-dev
+cd /opt/planning-poker-dev-dev
 ./infra/deploy/deploy-prod.sh
 ```
 
@@ -109,7 +109,7 @@ Sequence: `git pull --ff-only origin main` → build `voting-service`,
 Web-only rollout (frontend-only changes, faster):
 
 ```bash
-cd /opt/planning-poker
+cd /opt/planning-poker-dev
 ./infra/deploy/deploy-web-prod.sh
 ```
 
@@ -121,17 +121,17 @@ cd /opt/planning-poker
 `deploy-web-prod.sh` can send Telegram notifications on deploy start, success,
 and failure. Keep the bot token on the server only; do not commit it to git.
 
-Create `/opt/planning-poker/.deploy.env`:
+Create `/opt/planning-poker-dev/.deploy.env`:
 
 ```bash
-cat >/opt/planning-poker/.deploy.env <<'EOF'
+cat >/opt/planning-poker-dev/.deploy.env <<'EOF'
 TELEGRAM_CHAT_ID=-1003923094895
 TELEGRAM_BOT_TOKEN=<telegram-bot-token>
 DEPLOY_APP_NAME=Planning Poker
 DEPLOY_ENVIRONMENT=production
 DEPLOY_DOMAIN=planning.shults-sync.com
 EOF
-chmod 600 /opt/planning-poker/.deploy.env
+chmod 600 /opt/planning-poker-dev/.deploy.env
 ```
 
 The deploy script automatically loads `.deploy.env` when it exists.
@@ -149,7 +149,7 @@ is separate from deploy/pipeline notifications: the variables must be present in
 the runtime `.env` loaded by `docker-compose.prod.yml`, because `voting-service`
 reads them inside the app process.
 
-Add to `/opt/planning-poker/.env`:
+Add to `/opt/planning-poker-dev/.env`:
 
 ```bash
 TELEGRAM_CHAT_ID=-1003923094895
@@ -183,7 +183,7 @@ On every push to `main`, CI runs tests and compose validation first. If they
 pass, the `deploy-web` job connects to the server over SSH and runs:
 
 ```bash
-cd /opt/planning-poker-dev
+cd /opt/planning-poker-dev-dev
 ./infra/deploy/deploy-prod.sh
 ```
 
