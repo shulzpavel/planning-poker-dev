@@ -1,0 +1,36 @@
+---
+description: Planning Poker microservices workspace map and repo routing
+alwaysApply: true
+---
+
+# Workspace Rules
+
+## Active workspace
+
+This is the **Planning Poker microservices** workspace. Prefer these repos over the legacy monorepo.
+
+| Folder | Repo | Responsibility |
+|---|---|---|
+| `dev/` | planning-poker-dev | docker compose, deploy scripts, infra, CI notify workflows |
+| `voting-service/` | planning-poker-voting-service | CMS API, scope board runtime, sessions, RBAC, Postgres |
+| `jira-service/` | planning-poker-jira-service | Jira search/writes, scope_board tests |
+| `web/` | planning-poker-web | React/Vite UI (`/cms`, `/manage`, voting links) |
+
+## Legacy
+
+- `telegram_pb` is **legacy monorepo** — do not edit unless the user explicitly asks.
+- Production deploys run from the repos above, not from `telegram_pb`.
+
+## Where to change code
+
+- `/cms/scope` UI: `web/src/features/cms/scope/**`
+- Scope metrics / alerts backend: `voting-service/app/domain/scope_board.py`
+- Scope tests: `jira-service/tests/test_scope_board.py`
+- Deploy / Telegram CI alerts: `dev/infra/deploy/**`, `dev/.github/workflows/**`
+- Service CI: each repo's `.github/workflows/ci.yml`
+
+## Conventions
+
+- Commit and deploy from the **service repo** that owns the code.
+- Shared deploy logic lives in `planning-poker-dev`; service repos call reusable workflows from there.
+- After backend + web changes, deploy both `voting-service` and `web` when scope/CMS behavior changes.

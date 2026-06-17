@@ -1,0 +1,13 @@
+{
+  "folders": [
+    { "name": "dev", "path": "." },
+    { "name": "voting-service", "path": "../planning-poker-voting-service" },
+    { "name": "jira-service", "path": "../planning-poker-jira-service" },
+    { "name": "web", "path": "../planning-poker-web" }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.DS_Store": true
+    }
+  }
+}

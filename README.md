@@ -2,6 +2,20 @@
 
 Local orchestration for all Planning Poker microservices.
 
+## Cursor workspace
+
+Open the multi-root workspace (recommended):
+
+```bash
+cursor ~/Documents/GitHub/planning-poker-dev/planning-poker.code-workspace
+```
+
+Or in Cursor: **File → Open Workspace from File…** → `planning-poker.code-workspace`
+
+Folders: `dev`, `voting-service`, `jira-service`, `web`.
+
+Legacy monorepo `telegram_pb` is not part of this workspace.
+
 ## Layout
 
 ```text
