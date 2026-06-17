@@ -1,0 +1,16 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker compose files
+        run: |
+          docker compose config >/tmp/planning-poker-compose.yml
+          docker compose -f docker-compose.prod.yml --env-file .env.example config >/tmp/planning-poker-prod-compose.yml
