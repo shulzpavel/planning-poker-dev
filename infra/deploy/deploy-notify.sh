@@ -49,21 +49,34 @@ deploy_notify_service_sha() {
   git -C "$repo_dir" rev-parse --short HEAD 2>/dev/null || echo "unknown"
 }
 
+deploy_notify_short_trigger() {
+  local trigger="$1"
+  if [[ "$trigger" =~ ^github:([^@]+)@([0-9a-f]{7,40})$ ]]; then
+    printf 'github:%s@%s' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]:0:7}"
+    return
+  fi
+  if ((${#trigger} > 72)); then
+    printf '%s…' "${trigger:0:71}"
+    return
+  fi
+  printf '%s' "$trigger"
+}
+
 deploy_notify_format_services() {
   local root_dir="$1"
   shift
-  local service repo_dir sha line
+  local service repo_dir sha repo_name
   local lines=()
 
   for service in "$@"; do
     repo_dir="$(deploy_notify_service_repo_dir "$root_dir" "$service")"
     sha="$(deploy_notify_service_sha "$repo_dir")"
-    line="• $(deploy_notify_html_escape "$service") — <code>$(deploy_notify_html_escape "$sha")</code> ($(deploy_notify_html_escape "$(deploy_notify_service_repo "$service")"))"
-    lines+=("$line")
+    repo_name="$(deploy_notify_service_repo "$service")"
+    lines+=("• $(deploy_notify_html_escape "$service") — <code>$(deploy_notify_html_escape "$sha")</code>")
+    lines+=("  $(deploy_notify_html_escape "$repo_name")")
   done
 
-  local joined=""
-  local item
+  local joined="" item
   for item in "${lines[@]}"; do
     if [[ -n "$joined" ]]; then
       joined+=$'\n'"$item"
@@ -74,14 +87,42 @@ deploy_notify_format_services() {
   printf '%s' "$joined"
 }
 
-deploy_notify_send() {
-  local status="$1"
-  local details="$2"
-  local root_dir="${3:-}"
+deploy_notify_post() {
+  local text="$1"
 
   if [[ -z "${TELEGRAM_BOT_TOKEN:-}" || -z "${TELEGRAM_CHAT_ID:-}" ]]; then
     return 0
   fi
+
+  DEPLOY_NOTIFY_TEXT="$text" TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" TELEGRAM_CHAT_ID="$TELEGRAM_CHAT_ID" python3 - <<'PY'
+import json
+import os
+import urllib.request
+
+text = os.environ["DEPLOY_NOTIFY_TEXT"]
+payload = {
+    "chat_id": os.environ["TELEGRAM_CHAT_ID"],
+    "text": text,
+    "parse_mode": "HTML",
+    "disable_web_page_preview": True,
+}
+req = urllib.request.Request(
+    f"https://api.telegram.org/bot{os.environ['TELEGRAM_BOT_TOKEN']}/sendMessage",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+try:
+    urllib.request.urlopen(req, timeout=20)
+except Exception:
+    pass
+PY
+}
+
+deploy_notify_send() {
+  local status="$1"
+  local details="$2"
+  local root_dir="${3:-}"
 
   local icon title
   case "$status" in
@@ -91,12 +132,12 @@ deploy_notify_send() {
     *) icon="ℹ️"; title="Статус деплоя" ;;
   esac
 
-  local app env domain host trigger safe_details scope services_block dev_sha
+  local app env domain host trigger safe_details scope dev_sha
   app="$(deploy_notify_html_escape "$DEPLOY_APP_NAME")"
   env="$(deploy_notify_html_escape "$DEPLOY_ENVIRONMENT")"
   domain="$(deploy_notify_html_escape "$DEPLOY_DOMAIN")"
   host="$(deploy_notify_html_escape "$(hostname)")"
-  trigger="$(deploy_notify_html_escape "$DEPLOY_TRIGGER")"
+  trigger="$(deploy_notify_html_escape "$(deploy_notify_short_trigger "$DEPLOY_TRIGGER")")"
   safe_details="$(deploy_notify_html_escape "$details")"
   scope="$(deploy_notify_html_escape "${DEPLOY_SCOPE:-}")"
   dev_sha="unknown"
@@ -104,40 +145,35 @@ deploy_notify_send() {
     dev_sha="$(deploy_notify_html_escape "$(deploy_notify_service_sha "$root_dir")")"
   fi
 
-  if [[ -n "${DEPLOY_SERVICES_BLOCK:-}" ]]; then
-    services_block="$DEPLOY_SERVICES_BLOCK"
-  elif [[ -n "${DEPLOY_SERVICE:-}" && -n "$root_dir" ]]; then
+  local text
+  text="$(printf '%s <b>%s</b>\n' "$icon" "$title")"
+
+  if [[ -n "${DEPLOY_SERVICE:-}" && -n "$root_dir" ]]; then
     local repo_dir sha repo_name
     repo_dir="$(deploy_notify_service_repo_dir "$root_dir" "$DEPLOY_SERVICE")"
     sha="$(deploy_notify_service_sha "$repo_dir")"
     repo_name="$(deploy_notify_service_repo "$DEPLOY_SERVICE")"
-    services_block="• $(deploy_notify_html_escape "$DEPLOY_SERVICE") — <code>$(deploy_notify_html_escape "$sha")</code> ($(deploy_notify_html_escape "$repo_name"))"
-  else
-    services_block=""
+    text+=$'\n'"<b>Сервис:</b> $(deploy_notify_html_escape "$DEPLOY_SERVICE")"
+    text+=$'\n'"<b>Репозиторий:</b> $(deploy_notify_html_escape "$repo_name")"
+    text+=$'\n'"<b>Коммит:</b> <code>$(deploy_notify_html_escape "$sha")</code>"
+  elif [[ -n "${DEPLOY_SERVICES_BLOCK:-}" ]]; then
+    text+=$'\n\n'"<b>Сервисы:</b>"
+    text+=$'\n'"${DEPLOY_SERVICES_BLOCK}"
   fi
 
-  local text
-  text="$(printf '%s <b>%s</b>\n\n' "$icon" "$title")"
+  text+=$'\n\n'"<b>Триггер:</b> <code>${trigger}</code>"
+  text+=$'\n'"<b>Dev repo:</b> <code>${dev_sha}</code>"
   if [[ -n "$scope" ]]; then
-    text+="$(printf '<b>Scope:</b> %s\n' "$scope")"
+    text+=$'\n'"<b>Scope:</b> <code>${scope}</code>"
   fi
-  if [[ -n "$services_block" ]]; then
-    text+="$(printf '<b>Сервисы:</b>\n%s\n' "$services_block")"
-  fi
-  text+="$(printf '<b>Триггер:</b> <code>%s</code>\n<b>Dev repo:</b> <code>%s</code>\n<b>Проект:</b> %s\n<b>Окружение:</b> <code>%s</code>\n<b>Домен:</b> <a href="https://%s">%s</a>\n<b>Сервер:</b> <code>%s</code>\n\n%s' \
-    "$trigger" \
-    "$dev_sha" \
-    "$app" \
-    "$env" \
-    "$domain" \
-    "$domain" \
-    "$host" \
-    "$safe_details")"
+  text+=$'\n\n'"<b>Проект:</b> ${app}"
+  text+=$'\n'"<b>Окружение:</b> <code>${env}</code>"
+  text+=$'\n'"<b>Домен:</b> <a href=\"https://${domain}\">${domain}</a>"
+  text+=$'\n'"<b>Сервер:</b> <code>${host}</code>"
 
-  curl -fsS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-    --data-urlencode "parse_mode=HTML" \
-    --data-urlencode "disable_web_page_preview=true" \
-    --data-urlencode "text=${text}" \
-    >/dev/null || true
+  if [[ -n "$safe_details" ]]; then
+    text+=$'\n\n'"${safe_details}"
+  fi
+
+  deploy_notify_post "$text"
 }

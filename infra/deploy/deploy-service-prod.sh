@@ -29,6 +29,9 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
+echo "Updating deploy scripts from planning-poker-dev..."
+git -C "$ROOT_DIR" pull --ff-only origin main
+
 deploy_notify_load_env "$ROOT_DIR"
 
 REPO_NAME="$(deploy_notify_service_repo "$SERVICE")"
