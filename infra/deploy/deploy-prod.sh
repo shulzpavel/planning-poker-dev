@@ -32,6 +32,8 @@ notify_failure() {
 
 trap notify_failure ERR
 
+deploy_acquire_lock "$ROOT_DIR"
+
 deploy_notify_send "STARTED" "Полный деплой: ${SERVICES[*]}." "$ROOT_DIR"
 
 echo "Pulling latest main from all microservice repos..."

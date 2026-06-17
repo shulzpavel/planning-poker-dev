@@ -4,6 +4,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PARENT_DIR="$(dirname "$ROOT_DIR")"
+# shellcheck disable=SC1091
+source "$ROOT_DIR/infra/deploy/deploy-notify.sh"
 
 REPOS=(
   planning-poker-jira-service
@@ -19,7 +21,7 @@ for repo in "${REPOS[@]}"; do
     exit 1
   fi
   echo "Pulling $repo..."
-  git -C "$dir" pull --ff-only origin main
+  deploy_sync_repo_main "$dir"
 done
 
 echo "All repos updated."

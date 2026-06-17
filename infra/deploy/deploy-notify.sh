@@ -1,6 +1,31 @@
 #!/usr/bin/env bash
 # Shared Telegram deploy notifications. Source from deploy scripts.
 
+deploy_sync_repo_main() {
+  local repo_dir="${1:?repo dir required}"
+  local repo_name
+  repo_name="$(basename "$repo_dir")"
+
+  if [[ ! -d "$repo_dir/.git" ]]; then
+    echo "Missing git repo: $repo_dir" >&2
+    return 1
+  fi
+
+  echo "Syncing ${repo_name} to origin/main..."
+  git -C "$repo_dir" fetch --prune origin main
+  git -C "$repo_dir" checkout -B main origin/main
+}
+
+deploy_acquire_lock() {
+  local root_dir="${1:?root dir required}"
+  local lock_file="${root_dir}/.deploy.lock"
+  exec {DEPLOY_LOCK_FD}>"$lock_file"
+  if ! flock -w 900 "$DEPLOY_LOCK_FD"; then
+    echo "Timed out waiting for deploy lock ($lock_file)" >&2
+    return 1
+  fi
+}
+
 deploy_notify_load_env() {
   local root_dir="${1:?root dir required}"
   local notify_file="${DEPLOY_NOTIFY_ENV_FILE:-$root_dir/.deploy.env}"

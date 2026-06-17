@@ -29,8 +29,10 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
+deploy_acquire_lock "$ROOT_DIR"
+
 echo "Updating deploy scripts from planning-poker-dev..."
-git -C "$ROOT_DIR" pull --ff-only origin main
+deploy_sync_repo_main "$ROOT_DIR"
 
 deploy_notify_load_env "$ROOT_DIR"
 
@@ -52,7 +54,7 @@ trap notify_failure ERR
 deploy_notify_send "STARTED" "Сборка и перезапуск ${SERVICE}." "$ROOT_DIR"
 
 echo "Pulling ${REPO_NAME}..."
-git -C "$REPO_DIR" pull --ff-only origin main
+deploy_sync_repo_main "$REPO_DIR"
 
 echo "Building ${SERVICE}..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "$SERVICE"
