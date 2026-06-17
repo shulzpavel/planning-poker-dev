@@ -1,0 +1,191 @@
+name: planning-poker
+
+services:
+  jira-service:
+    build:
+      context: .
+      dockerfile: backend/services/jira_service/Dockerfile
+    container_name: jira-service
+    ports:
+      - "8001:8001"
+    environment:
+      - JIRA_SERVICE_PORT=8001
+      - JIRA_URL=${JIRA_URL}
+      - JIRA_USERNAME=${JIRA_USERNAME}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
+      - STORY_POINTS_FIELD=${STORY_POINTS_FIELD}
+      - JIRA_SP_DEV_FIELD=${JIRA_SP_DEV_FIELD:-}
+      - JIRA_SP_TEST_FIELD=${JIRA_SP_TEST_FIELD:-}
+      - JIRA_SP_FRONT_FIELD=${JIRA_SP_FRONT_FIELD:-}
+      - JIRA_SP_BACK_FIELD=${JIRA_SP_BACK_FIELD:-}
+      - JIRA_SP_QA_FIELD=${JIRA_SP_QA_FIELD:-}
+      - JIRA_FRONT_ASSIGNEE_FIELD=${JIRA_FRONT_ASSIGNEE_FIELD:-customfield_10710}
+      - JIRA_BACK_ASSIGNEE_FIELD=${JIRA_BACK_ASSIGNEE_FIELD:-customfield_10711}
+      - JIRA_QA_ASSIGNEE_FIELD=${JIRA_QA_ASSIGNEE_FIELD:-customfield_10249}
+      - JIRA_DEMO_FALLBACK=${JIRA_DEMO_FALLBACK:-false}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  voting-service:
+    build:
+      context: .
+      dockerfile: backend/services/voting_service/Dockerfile
+    container_name: voting-service
+    ports:
+      - "8002:8002"
+    environment:
+      - VOTING_SERVICE_PORT=8002
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - POSTGRES_DSN=${POSTGRES_DSN:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-planning_poker}}
+      - STATE_FILE=${STATE_FILE:-/data/state.json}
+      - CMS_USERNAME=${CMS_USERNAME:-admin}
+      - CMS_PASSWORD=${CMS_PASSWORD:-}
+      - CMS_COOKIE_SECURE=${CMS_COOKIE_SECURE:-false}
+      - WEB_UI_URL=${WEB_UI_URL:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - ENABLE_DEMO_SESSION=${ENABLE_DEMO_SESSION:-true}
+      - JIRA_SERVICE_URL=${JIRA_SERVICE_URL:-http://jira-service:8001}
+      - JIRA_SERVICE_TIMEOUT_SECONDS=${JIRA_SERVICE_TIMEOUT_SECONDS:-30}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-haiku-4-5-20251001}
+      - ANTHROPIC_TIMEOUT_SECONDS=${ANTHROPIC_TIMEOUT_SECONDS:-20}
+      - ANTHROPIC_MAX_CONTEXT_CHARS=${ANTHROPIC_MAX_CONTEXT_CHARS:-16000}
+      - SCOPE_AI_TIMEOUT_SECONDS=${SCOPE_AI_TIMEOUT_SECONDS:-90}
+      - SCOPE_AI_MAX_OUTPUT_TOKENS=${SCOPE_AI_MAX_OUTPUT_TOKENS:-3600}
+      - SCOPE_JIRA_CHANGELOG_MAX_ISSUES=${SCOPE_JIRA_CHANGELOG_MAX_ISSUES:-40}
+      - SCOPE_JIRA_CHANGELOG_BATCH_SIZE=${SCOPE_JIRA_CHANGELOG_BATCH_SIZE:-6}
+      - SCOPE_REFRESH_RATE_MAX=${SCOPE_REFRESH_RATE_MAX:-30}
+      - SCOPE_REFRESH_BOARD_RATE_MAX=${SCOPE_REFRESH_BOARD_RATE_MAX:-12}
+      - JIRA_SP_DEV_FIELD=${JIRA_SP_DEV_FIELD:-}
+      - JIRA_SP_TEST_FIELD=${JIRA_SP_TEST_FIELD:-}
+      - JIRA_SP_FRONT_FIELD=${JIRA_SP_FRONT_FIELD:-}
+      - JIRA_SP_BACK_FIELD=${JIRA_SP_BACK_FIELD:-}
+      - JIRA_SP_QA_FIELD=${JIRA_SP_QA_FIELD:-}
+      - JIRA_FRONT_ASSIGNEE_FIELD=${JIRA_FRONT_ASSIGNEE_FIELD:-customfield_10710}
+      - JIRA_BACK_ASSIGNEE_FIELD=${JIRA_BACK_ASSIGNEE_FIELD:-customfield_10711}
+      - JIRA_QA_ASSIGNEE_FIELD=${JIRA_QA_ASSIGNEE_FIELD:-customfield_10249}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - voting-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: voting-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: voting-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-planning_poker}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../planning-poker-web
+      dockerfile: Dockerfile
+    container_name: poker-web
+    ports:
+      - "3001:80"
+    depends_on:
+      voting-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: planning-poker-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
+      # For datasource provisioning
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-planning_poker}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  grafana-init:
+    image: alpine:3.19
+    container_name: planning-poker-grafana-init
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache curl
+        echo "Waiting for Grafana (may take 30s)..."
+        sleep 5
+        for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+          if curl -sf -u "$${GRAFANA_USER:-admin}:$${GRAFANA_PASS:-admin}" "http://grafana:3000/api/health" 2>/dev/null; then
+            echo "Grafana ready"; break
+          fi
+          sleep 2
+        done
+        echo "Importing dashboard..."
+        OUT=$$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST -H "Content-Type: application/json" \
+          -u "$${GRAFANA_USER:-admin}:$${GRAFANA_PASS:-admin}" \
+          -d @/dashboards/planning-poker-api.json "http://grafana:3000/api/dashboards/db")
+        echo "$$OUT"
+        echo "$$OUT" | grep -q "HTTP_CODE:200" && echo "Dashboard imported OK" || echo "Import failed - check response above"
+    volumes:
+      - ./infra/grafana/import/planning-poker-api-import.json:/dashboards/planning-poker-api.json:ro
+    environment:
+      - GRAFANA_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GRAFANA_PASS=${GRAFANA_ADMIN_PASSWORD:-admin}
+    depends_on:
+      grafana:
+        condition: service_started
+    restart: "no"
+
+volumes:
+  voting-data:
+  redis-data:
+  postgres-data:
+  grafana-data:

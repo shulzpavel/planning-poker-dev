@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-service
+  namespace: planning-poker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: voting-service
+  template:
+    metadata:
+      labels:
+        app: voting-service
+    spec:
+      containers:
+      - name: voting-service
+        image: planning-poker/voting-service:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: VOTING_SERVICE_PORT
+          value: "8002"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: voting-config
+              key: redis-url
+        - name: POSTGRES_DSN
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: dsn
+        - name: JIRA_SERVICE_URL
+          value: "http://jira-service:8001"
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: anthropic-secrets
+              key: api-key
+        - name: ANTHROPIC_MODEL
+          value: "claude-haiku-4-5-20251001"
+        - name: ANTHROPIC_TIMEOUT_SECONDS
+          value: "20"
+        - name: ANTHROPIC_MAX_CONTEXT_CHARS
+          value: "16000"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8002
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-service
+  namespace: planning-poker
+spec:
+  selector:
+    app: voting-service
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP

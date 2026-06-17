@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jira-config
+  namespace: planning-poker
+data:
+  story-points-field: "customfield_10022"
+  jira-demo-fallback: "false"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: voting-config
+  namespace: planning-poker
+data:
+  redis-url: "redis://redis:6379/0"

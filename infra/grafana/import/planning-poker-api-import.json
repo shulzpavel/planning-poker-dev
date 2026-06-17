@@ -1,0 +1,131 @@
+{
+  "dashboard": {
+    "uid": "planning-poker-overview",
+    "title": "Planning Poker Overview",
+    "timezone": "browser",
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Events (last 1h)",
+        "gridPos": {"h": 4, "w": 5, "x": 0, "y": 0},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT count(*) as cnt FROM app_events WHERE ts > now() - interval '1 hour'",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "stat",
+        "title": "Errors (last 1h)",
+        "gridPos": {"h": 4, "w": 5, "x": 5, "y": 0},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT count(*) as cnt FROM app_events WHERE ts > now() - interval '1 hour' AND status = 'error'",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Events per minute",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT date_trunc('minute', ts) as time, count(*) as events FROM app_events WHERE $__timeFilter(ts) GROUP BY 1 ORDER BY 1",
+            "format": "time_series",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Errors per minute",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT date_trunc('minute', ts) as time, count(*) as errors FROM app_events WHERE $__timeFilter(ts) AND status = 'error' GROUP BY 1 ORDER BY 1",
+            "format": "time_series",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "bargauge",
+        "title": "Top actions (last 24h)",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT event as metric, count(*) as value FROM app_events WHERE ts > now() - interval '24 hours' GROUP BY event ORDER BY value DESC LIMIT 10",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Recent errors",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT ts, event, status, payload FROM app_events WHERE status = 'error' ORDER BY ts DESC LIMIT 20",
+            "format": "table",
+            "refId": "A"
+          }
+        ],
+        "options": {"showHeader": true}
+      },
+      {
+        "type": "stat",
+        "title": "Services down (15m)",
+        "gridPos": {"h": 4, "w": 6, "x": 10, "y": 0},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT count(*) as cnt FROM app_events WHERE event='service_health' AND status='error' AND ts > now() - interval '15 minutes'",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "timeseries",
+        "title": "Service health failures",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 20},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT date_trunc('minute', ts) as time, count(*) as failures FROM app_events WHERE event='service_health' AND status='error' AND $__timeFilter(ts) GROUP BY 1 ORDER BY 1",
+            "format": "time_series",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "type": "table",
+        "title": "Last health per service",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 20},
+        "targets": [
+          {
+            "datasource": {"type": "postgres", "uid": "postgres"},
+            "rawSql": "SELECT DISTINCT ON (payload->>'service') payload->>'service' as service, status, ts as last_check, payload->>'latency_ms' as latency_ms FROM app_events WHERE event='service_health' AND ts > now() - interval '2 hours' ORDER BY payload->>'service', ts DESC",
+            "format": "table",
+            "refId": "A"
+          }
+        ],
+        "options": {"showHeader": true}
+      }
+    ],
+    "schemaVersion": 38,
+    "version": 2
+  },
+  "overwrite": true
+}

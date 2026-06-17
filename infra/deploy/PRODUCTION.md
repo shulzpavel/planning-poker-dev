@@ -1,0 +1,336 @@
+# Production Deploy
+
+Target domain: `planning.shults-sync.com`.
+
+## Architecture
+
+- Cloudflare DNS and proxy in front of the VPS.
+- Caddy terminates HTTPS and proxies traffic.
+- Docker Compose runs `web`, `voting-service`, `jira-service`, `postgres`, and `redis`.
+- Only ports `80` and `443` are public. Postgres, Redis, and internal services stay inside the Docker network.
+
+## Cloudflare
+
+Create an `A` record:
+
+- Name: `planning`
+- Content: VPS IPv4
+- Proxy status: start with `DNS only` for first deploy/debug, then switch to `Proxied`
+- SSL/TLS mode: `Full (strict)`
+- Network: WebSockets `On`
+
+## Site IP allowlist (VPN)
+
+Production gates **the entire site** at Caddy. Only clients whose IP is listed in
+`SITE_ALLOWED_IPS` can open the UI, vote, or call the API. `/health/*` stays
+public so deploy checks and uptime probes still work.
+
+In `.env` set space-separated VPN/office egress addresses:
+
+```bash
+SITE_ALLOWED_IPS=203.0.113.10 198.51.100.0/24
+SITE_IP_WHITELIST_ENABLED=true
+```
+
+After changing the list, reload Caddy:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate caddy
+```
+
+**Before enabling:** confirm your current public IP while on VPN:
+
+```bash
+curl -s https://ifconfig.me
+```
+
+Add that IP (or your VPN CIDR) to `SITE_ALLOWED_IPS` first, then recreate Caddy.
+Otherwise you will lock yourself out of the site (except `/health/`). Blocked
+clients get a friendly **403** HTML page (Бибизяныч + VPN hint) served directly
+from Caddy — not the React app.
+
+To disable the gate (local experiments only): `SITE_IP_WHITELIST_ENABLED=false`.
+
+With Cloudflare **Proxied**, Caddy uses `CF-Connecting-IP` (see `trusted_proxies`
+in `infra/caddy/Caddyfile`) so the allowlist still matches the user's VPN IP,
+not Cloudflare's edge.
+
+## First Deploy
+
+Install Docker Engine and Compose plugin using Docker's official apt repository.
+
+Clone the repo:
+
+```bash
+mkdir -p /opt/planning-poker
+cd /opt/planning-poker
+git clone <repo-url> .
+```
+
+Create the env file:
+
+```bash
+cp infra/deploy/prod.env.example .env
+nano .env
+```
+
+Build and start infrastructure plus web/API first:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env build
+docker compose -f docker-compose.prod.yml --env-file .env up -d postgres redis jira-service voting-service web caddy
+```
+
+Check:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env ps
+curl -fsS https://planning.shults-sync.com/health/
+```
+
+Open:
+
+- `https://planning.shults-sync.com/cms`
+- login with `CMS_USERNAME` / `CMS_PASSWORD`
+
+## Update
+
+Full-stack rollout (backend + web) — use this by default; any change in
+`backend/` only reaches production through it:
+
+```bash
+cd /opt/planning-poker
+./infra/deploy/deploy-prod.sh
+```
+
+Sequence: `git pull --ff-only origin main` → build `voting-service`,
+`jira-service`, `web` → `up -d` → wait for the voting-service health check.
+
+Web-only rollout (frontend-only changes, faster):
+
+```bash
+cd /opt/planning-poker
+./infra/deploy/deploy-web-prod.sh
+```
+
+> **Warning:** `deploy-web-prod.sh` rebuilds only the `web` container and
+> silently leaves backend services on the old image.
+
+## Telegram deploy alerts
+
+`deploy-web-prod.sh` can send Telegram notifications on deploy start, success,
+and failure. Keep the bot token on the server only; do not commit it to git.
+
+Create `/opt/planning-poker/.deploy.env`:
+
+```bash
+cat >/opt/planning-poker/.deploy.env <<'EOF'
+TELEGRAM_CHAT_ID=-1003923094895
+TELEGRAM_BOT_TOKEN=<telegram-bot-token>
+DEPLOY_APP_NAME=Planning Poker
+DEPLOY_ENVIRONMENT=production
+DEPLOY_DOMAIN=planning.shults-sync.com
+EOF
+chmod 600 /opt/planning-poker/.deploy.env
+```
+
+The deploy script automatically loads `.deploy.env` when it exists.
+
+GitHub Actions also sends pipeline notifications before and after CI/deploy.
+Add these repository secrets in `Settings -> Secrets and variables -> Actions`:
+
+- `TELEGRAM_CHAT_ID`
+- `TELEGRAM_BOT_TOKEN`
+
+## Telegram session-finish alerts
+
+Planning sessions can also send a Telegram alert when they newly complete. This
+is separate from deploy/pipeline notifications: the variables must be present in
+the runtime `.env` loaded by `docker-compose.prod.yml`, because `voting-service`
+reads them inside the app process.
+
+Add to `/opt/planning-poker/.env`:
+
+```bash
+TELEGRAM_CHAT_ID=-1003923094895
+TELEGRAM_BOT_TOKEN=<telegram-bot-token>
+WEB_UI_URL=https://planning.shults-sync.com
+```
+
+After changing these values, recreate `voting-service`:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate voting-service
+```
+
+Verify the app container sees the secrets without printing them:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env exec voting-service sh -lc \
+'echo "BOT=${TELEGRAM_BOT_TOKEN:+set} CHAT=${TELEGRAM_CHAT_ID:+set} WEB_UI_URL=$WEB_UI_URL"'
+```
+
+Expected: `BOT=set CHAT=set WEB_UI_URL=https://planning.shults-sync.com`.
+
+Alerts are sent on auto-completion after the final task, explicit manager
+Finish, and CMS force-close. Already completed sessions do not send duplicate
+alerts.
+
+## Auto Deploy on push to main
+
+The repo deploys from the existing `.github/workflows/ci.yml` workflow.
+On every push to `main`, CI runs tests and compose validation first. If they
+pass, the `deploy-web` job connects to the server over SSH and runs:
+
+```bash
+cd /opt/planning-poker
+./infra/deploy/deploy-prod.sh
+```
+
+### One-time setup
+
+1. Generate a dedicated deploy key on your local machine:
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/planning_poker_deploy
+```
+
+2. Add public key to server:
+
+```bash
+ssh <user>@<server-ip>
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+echo "<contents-of-planning_poker_deploy.pub>" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+3. In GitHub repository settings, add secrets:
+
+- `DEPLOY_HOST` — server IP or DNS
+- `DEPLOY_USER` — SSH user on server
+- `DEPLOY_SSH_KEY` — private key from `~/.ssh/planning_poker_deploy`
+
+4. Push to `main` and verify the `deploy-web` job in the `CI` workflow.
+
+## Logs
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env logs -f voting-service
+docker compose -f docker-compose.prod.yml --env-file .env logs -f caddy
+```
+
+## Realtime voting checks
+
+Voting screens use `wss://<domain>/api/v1/ws/{token}` plus Redis pub/sub. A
+page refresh reads `/api/v1/web/state/{token}`, so "refresh works but live UI is
+stale" usually points at WebSocket/proxy/pubsub.
+
+After deploy:
+
+1. Open a manager session and a participant invite in two browsers.
+2. Join as a participant and verify the manager lobby updates without refresh.
+3. Start voting, cast a vote, and verify the participant/manager vote state
+   changes live.
+4. Set the final estimate on the last task and verify the participant reaches
+   complete state without manual refresh.
+
+Useful log filters:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env logs --tail=200 voting-service \
+  | grep -Ei "websocket|pubsub|publish_state|session finish|telegram"
+```
+
+Cloudflare must keep **Network -> WebSockets** enabled, and Caddy must keep the
+`Upgrade` / `Connection: upgrade` proxy headers for `/api/v1/ws/`.
+
+## Caddy keeps restarting
+
+If `docker ps` shows `poker-caddy` as `Restarting` and `ss` has no `:80`/`:443`:
+
+```bash
+docker logs poker-caddy --tail 40
+```
+
+Common causes:
+
+1. **Invalid Caddyfile** — e.g. `trusted_proxies ... cloudflare` on stock `caddy:2-alpine`
+   (use static Cloudflare CIDRs in `infra/caddy/Caddyfile` instead).
+2. **Missing `APP_DOMAIN` / `ACME_EMAIL`** in `.env`.
+3. **Empty `SITE_ALLOWED_IPS`** while whitelist is enabled — add at least one IP/CIDR.
+4. **Missing static 403 page** — `infra/caddy/static/403.html` must exist on the server (`git pull`).
+
+After fixing `.env` or config:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate caddy
+ss -tlnp | grep -E ':80|:443'
+curl -sI http://127.0.0.1/health/ -H "Host: planning.shults-sync.com"
+```
+
+## Jira Import
+
+Production imports tasks through `jira-service`. Fill these values in `.env`:
+
+```bash
+JIRA_URL=https://company.atlassian.net
+JIRA_USERNAME=jira-service-account@company.com
+JIRA_API_TOKEN=<jira-api-token>
+STORY_POINTS_FIELD=customfield_10022
+JIRA_DEMO_FALLBACK=false
+```
+
+Use `JIRA_DEMO_FALLBACK=false` in production so the app never imports local demo tasks when Jira is misconfigured or the JQL is empty.
+
+Import flow:
+
+1. Manager enters JQL in Cockpit or CMS session tasks.
+2. `voting-service` calls `jira-service` at `/api/v1/parse`.
+3. `jira-service` queries Jira REST API with the configured `JIRA_URL`, `JIRA_USERNAME`, and `JIRA_API_TOKEN`.
+4. Jira issues are normalized to `key`, `summary`, `url`, and `story_points`.
+5. Selected issues are appended to the session task queue with `source="jira"`.
+
+Verify the service configuration without exposing secrets:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env exec jira-service curl -fsS http://localhost:8001/health/ready
+```
+
+Expected production shape:
+
+```json
+{"status":"ready","jira_configured":true,"demo_fallback_enabled":false,"story_points_field":"customfield_10022"}
+```
+
+## AI Summary (Anthropic)
+
+Add to `.env`:
+
+```bash
+ANTHROPIC_API_KEY=<anthropic-api-key>
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+ANTHROPIC_TIMEOUT_SECONDS=20
+ANTHROPIC_MAX_CONTEXT_CHARS=16000
+```
+
+Restart `voting-service` after changing LLM env vars. Without `ANTHROPIC_API_KEY`, the manager **Generate AI summary** button returns an error and does not save a summary.
+
+Verify Jira context for one issue key:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env exec jira-service \
+  curl -fsS http://localhost:8001/api/v1/issue/YOUR-123/context
+```
+
+Then test the real search path with a small JQL before using the CMS import UI:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env exec jira-service \
+  curl -fsS -H "Content-Type: application/json" \
+  -d '{"jql":"project = YOURPROJECT ORDER BY priority DESC","max_results":5}' \
+  http://localhost:8001/api/v1/parse
+```
+
+## Backups
+
+Add scheduled Postgres backups after the first production verification.
