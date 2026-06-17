@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Full-stack production deploy: rebuilds backend services AND web.
 #
-# Use this for any change touching backend/ — deploy-web-prod.sh only
+# Use this for any change touching backend services — deploy-web-prod.sh only
 # rebuilds the web container and will silently leave voting-service /
 # jira-service on the old image.
 set -euo pipefail
@@ -107,8 +107,9 @@ trap notify_failure ERR
 
 notify_telegram "STARTED" "Полный деплой: ${SERVICES[*]}."
 
-echo "Pulling latest main..."
-git pull --ff-only origin main
+echo "Pulling latest main from all microservice repos..."
+"$ROOT_DIR/infra/deploy/pull-all.sh"
+cd "$ROOT_DIR"
 CURRENT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 
 echo "Building images: ${SERVICES[*]}..."

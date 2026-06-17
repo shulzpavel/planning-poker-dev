@@ -99,8 +99,9 @@ trap notify_failure ERR
 
 notify_telegram "STARTED" "Собираю web image и перезапускаю контейнер."
 
-echo "Pulling latest main..."
-git pull --ff-only origin main
+echo "Pulling latest main from all microservice repos..."
+"$ROOT_DIR/infra/deploy/pull-all.sh"
+cd "$ROOT_DIR"
 CURRENT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 
 echo "Building web image..."

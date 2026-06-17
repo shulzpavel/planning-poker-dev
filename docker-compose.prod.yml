@@ -93,8 +93,8 @@ services:
 
   jira-service:
     build:
-      context: .
-      dockerfile: backend/services/jira_service/Dockerfile
+      context: ../planning-poker-jira-service
+      dockerfile: Dockerfile
     container_name: jira-service
     restart: unless-stopped
     environment:

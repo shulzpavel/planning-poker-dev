@@ -3,8 +3,8 @@ name: planning-poker
 services:
   jira-service:
     build:
-      context: .
-      dockerfile: backend/services/jira_service/Dockerfile
+      context: ../planning-poker-jira-service
+      dockerfile: Dockerfile
     container_name: jira-service
     ports:
       - "8001:8001"
@@ -33,8 +33,8 @@ services:
 
   voting-service:
     build:
-      context: .
-      dockerfile: backend/services/voting_service/Dockerfile
+      context: ../planning-poker-voting-service
+      dockerfile: Dockerfile
     container_name: voting-service
     ports:
       - "8002:8002"
