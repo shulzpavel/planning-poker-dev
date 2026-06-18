@@ -16,6 +16,17 @@ http://{$APP_DOMAIN} {
 
 # Shared upstream routes for the React app and voting-service API.
 (secure_upstream) {
+	# Live voting + retro boards. Keep transport timeouts disabled so
+	# Cloudflare/Caddy do not drop long-lived pub/sub fan-out sockets.
+	@websocket path /api/v1/ws/* /api/v1/retro-ws/*
+	handle @websocket {
+		reverse_proxy voting-service:8002 {
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
 	reverse_proxy /api/* voting-service:8002
 	reverse_proxy web:80
 }

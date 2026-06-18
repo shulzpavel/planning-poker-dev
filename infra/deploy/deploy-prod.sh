@@ -64,5 +64,8 @@ done
 
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps "${SERVICES[@]}"
 
+echo "Reloading caddy (Caddyfile is bind-mounted from the host)..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate caddy
+
 deploy_notify_send "OK" "Образы собраны, контейнеры перезапущены, health-check пройден." "$ROOT_DIR"
 echo "Done."
