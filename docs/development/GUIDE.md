@@ -186,7 +186,7 @@ PYTHONPATH=. python -m pytest tests/test_scope_ai_jira_export.py -v
 Key test areas:
 - `test_scope_*.py`, `test_scope_ai_*`
 - `test_retro_*`, `test_ai_jobs.py`
-- `test_cms_rbac.py`, `test_cms_team_scope.py`, `test_cms_bootstrap_admin.py` (needs `POSTGRES_DSN`)
+- `test_cms_rbac.py`, `test_cms_team_scope.py`, `test_cms_destructive_team_scope.py`, `test_cms_bootstrap_admin.py` (needs `POSTGRES_DSN`)
 - `test_web_api.py`, `test_rate_limit.py`
 
 `pytest.ini`: `asyncio_mode = auto`.

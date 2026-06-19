@@ -106,6 +106,8 @@ principal = Depends(_require_manager_session)
 403 если `not principal.can(permission)`.
 404 если сессия принадлежит чужой команде (`assert_record_access` — без утечки существования).
 
+Destructive CMS endpoints (`DELETE /cms/tokens/{id}`, `DELETE /cms/users/{id}`) резолвят родительскую сессию и проверяют team scope до мутации. Для участника проверяются **все** связанные `team_id` сессий (`assert_user_sessions_access`).
+
 ---
 
 ## Team scope
@@ -118,7 +120,8 @@ principal = Depends(_require_manager_session)
 | admin без teams | только `team_id IS NULL` |
 | admin с teams | записи где `team_id IN actor.team_ids` |
 
-Проверка: `assert_record_access(actor, row)` в `cms_team_access.py`.
+Проверка: `assert_record_access(actor, row)` в `cms_team_access.py`.  
+Для hard-delete участника: `assert_user_sessions_access(actor, team_ids)` — все связанные команды должны быть доступны актору.
 
 При создании: `resolve_create_team_id(actor, requested_team_id)`.
 
