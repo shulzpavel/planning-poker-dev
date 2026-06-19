@@ -128,6 +128,7 @@ HTTP 503 если Jira не сконфигурирован. Readiness прове
 
 - Бизнес-логика scope metrics, RBAC checks, Jira enrichment — **только backend**.
 - Хранение секретов — cookie httpOnly, не localStorage.
+- Исключение: `pp_manager_session` хранит только `chatId` / `topicId` / `title` / `teamId` для возобновления cockpit после refresh. Invite token **не** пишется в storage — mint через `POST /app/sessions/{chat_id}/invite` или передаётся in-memory через router state после create/reopen.
 
 ### API base
 

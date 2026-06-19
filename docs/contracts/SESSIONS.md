@@ -101,6 +101,8 @@ Participant:
 
 Token TTL: **8 hours**.
 
+**Web client:** manager cockpit держит invite token только in-memory (`ManagerInvite`). В `localStorage` (`pp_manager_session`) — только `chatId`, `topicId`, `title`, `teamId`. После refresh или deep-link token mintится через `POST /app/sessions/{chat_id}/invite`. Сразу после create/reopen token передаётся через router state, чтобы не сжигать только что выданный token лишним regenerate.
+
 ---
 
 ## Jira import
