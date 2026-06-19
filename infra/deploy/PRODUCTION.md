@@ -2,6 +2,8 @@
 
 Target domain: `planning.shults-sync.com`.
 
+Related docs: [TECHNICAL.md](../../docs/TECHNICAL.md) (index), [development/GUIDE.md](../../docs/development/GUIDE.md) (ops/debug).
+
 ## Architecture
 
 - Cloudflare DNS and proxy in front of the VPS.
@@ -323,6 +325,31 @@ ANTHROPIC_MAX_CONTEXT_CHARS=16000
 ```
 
 Restart `voting-service` after changing LLM env vars. Without `ANTHROPIC_API_KEY`, the manager **Generate AI summary** button returns an error and does not save a summary.
+
+Scope board AI uses the same key with separate limits (optional overrides):
+
+```bash
+SCOPE_AI_TIMEOUT_SECONDS=60
+SCOPE_AI_MAX_OUTPUT_TOKENS=3600
+SCOPE_AI_MAX_CONTEXT_CHARS=5600
+SCOPE_AI_RATE_MAX=20
+SCOPE_AI_RATE_WINDOW_SECONDS=3600
+```
+
+## Scope AI → Jira export
+
+On a scope board, set **Эпик плана** (`plan_epic_key`) to a valid Jira issue key (e.g. `FLEX-123`).
+After **AI-анализ** completes, `voting-service` posts (or updates) an ADF comment on that epic
+with the summary: health badge, focus, critical items, blockers, capacity notes.
+
+UI badge states on `/cms/scope`:
+
+- `Сохранено в Jira` — comment written or updated
+- `Ошибка Jira` — write failed (hover for error text)
+- `Jira: ожидание` — epic set, export not finished yet
+
+Re-export is skipped when the summary hash is unchanged. Requires working Jira credentials
+and `POST/PUT` comment ADF endpoints on `jira-service`.
 
 Verify Jira context for one issue key:
 
