@@ -194,6 +194,8 @@ Update existing ADF comment (scope AI re-export).
 | `JIRA_PLAN_STATUS_FIELD`, `JIRA_PLAN_CHANGE_REASON_FIELD` | scope plan metadata |
 | `JIRA_DEMO_FALLBACK` | return demo data if misconfigured |
 | `JIRA_CACHE_MAX_ITEMS` | in-memory cache size |
+| `JIRA_RETRY_ATTEMPTS` | transient HTTP retries (default `3`) |
+| `JIRA_MAX_CONCURRENT_REQUESTS` | in-flight Jira HTTP cap per client (default `6`) |
 | `GITLAB_*` | optional role evidence |
 
 ---
@@ -208,6 +210,16 @@ Readiness check:
 curl http://localhost:8001/health/ready
 # expect jira_configured: true, demo_fallback_enabled: false
 ```
+
+---
+
+## HTTP retry / rate limits
+
+`JiraHttpClient` (`app/adapters/jira_http.py`) retries transient Jira responses (`429`, `5xx`):
+
+- reads `Retry-After` (seconds or HTTP-date) and waits at least that long;
+- otherwise exponential backoff with full jitter (`0.5s` base, `60s` cap);
+- caps in-flight Jira HTTP calls with `JIRA_MAX_CONCURRENT_REQUESTS` (default `6`) so parallel scope enrichment does not amplify throttling.
 
 ---
 
