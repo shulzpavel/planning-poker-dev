@@ -155,6 +155,7 @@ Field constraints (`_http_shared.py`): `summary: 1..500`, `jira_key: <=64`, `sto
 | GET/POST | `/cms/scope-boards` | `cms.planner.view` |
 | GET/PATCH/DELETE | `/cms/scope-boards/{id}` | `cms.planner.view` |
 | PATCH | `/cms/scope-boards/{id}/layout` | layout DnD |
+| PATCH | `/cms/scope-boards/{id}/flow-pace-chart-order` | donut chart DnD order (`chart_order: string[]`) |
 | PATCH | `/cms/scope-boards/{id}/release-comments` | |
 | POST | `/cms/scope-boards/{id}/refresh` | Jira → snapshot |
 | POST | `/cms/scope-boards/{id}/analyze` | AI (sync or `?async=1`) |

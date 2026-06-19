@@ -66,9 +66,10 @@ Release boards: один блок «Текущий релиз» + `release_conte
 7. compute_scope_metrics_from_sections()
 8. build_scope_snapshot() + delta/events
 9. merge_priority_queue() — preserve manual order/comments
-10. copy manual_questions, top_items, todo_items, report_comments from prev
-11. store.save_scope_board_snapshot()
-12. audit cms.scope_board.refresh
+10. compute_scope_flow_pace() — AI пульс спринта (Plan/Unplan, team-gated)
+11. copy manual_questions, top_items, todo_items, report_comments from prev
+12. store.save_scope_board_snapshot()
+13. audit cms.scope_board.refresh
 ```
 
 **Best practice:** не менять snapshot вручную в Postgres — только через refresh или PATCH endpoints.
@@ -100,6 +101,7 @@ interface ScopeBoardSnapshot {
   }
   release_context?: ScopeReleaseContext  // release boards only
   jira_fetch_warnings?: string[]
+  flow_pace?: ScopeFlowPaceSnapshot   // see «AI пульс спринта» below
 }
 ```
 
@@ -128,7 +130,86 @@ Intake rules (`sp` mode):
 
 Нормализация: `normalize_scope_issue()` из jira-service `ScopeIssueResponse`.
 
-Frontend mirror: `cmsClient.ts` lines ~374–443 — key, summary, story_points, story_points_dev/test, status, role_contributors, plan_status, sprints, etc.
+Frontend mirror: `cmsClient.ts` lines ~374–443 — key, summary, story_points, story_points_dev/test, status, role_contributors, plan_status, sprints, **start_date**, **resolution_date**, changelog segments (for flow pace), etc.
+
+---
+
+## AI пульс спринта (`flow_pace`)
+
+Domain: `voting-service/app/domain/scope_flow_pace.py`  
+UI block key: `flowPace` (layout order, after `planInsights`)  
+Enabled teams: `igaming-rip` (`FLOW_PACE_TEAM_SLUGS`)
+
+Computed on refresh from Plan/Unplan sections only (active + closed issues). Requires Jira changelog enrichment (`enrich_changelog=true` on scope search).
+
+### Board record fields
+
+```typescript
+{
+  flow_pace_chart_order?: string[]   // persisted DnD order of donut charts
+}
+```
+
+### Snapshot shape (`flow_pace`)
+
+```typescript
+interface ScopeFlowPaceSnapshot {
+  enabled: boolean
+  pace_status: "ok" | "watch" | "risk"
+  chart_order?: string[]
+  charts: {
+    donuts: ScopeFlowPaceChart[]
+  }
+  alerts: ScopeFlowAlert[]           // flat list (also embedded in active_signals chart)
+  summary: {
+    active_count: number
+    closed_count: number
+    alert_count: number
+    high_alert_count: number
+  }
+}
+
+interface ScopeFlowPaceChart {
+  id: "done_mix" | "throughput" | "cycle_time" | "phase_time" | "qa_iterations" | "active_signals"
+  title: string
+  subtitle: string
+  center_value: string
+  center_label: string
+  segments: { key, label, value, color }[]
+  methodology?: string               // shown in detail panel
+  detail_segments?: [{
+    key: string
+    label: string
+    items: [{
+      issue_key: string
+      issue_url?: string
+      summary?: string
+      metric_label?: string
+      metric_value?: string
+      detail?: string
+      alert?: ScopeFlowAlert      // active_signals only
+    }]
+  }]
+}
+```
+
+Chart order is normalized server-side to the six known IDs; unknown IDs are dropped, missing IDs appended at default positions.
+
+### Chart order API
+
+```
+PATCH /cms/scope-boards/{id}/flow-pace-chart-order
+Body: { "chart_order": ["done_mix", "throughput", ...] }
+Permission: cms.planner.view + team scope
+```
+
+On read, `cms_store` merges `flow_pace_chart_order` with snapshot donuts via `apply_flow_pace_chart_order()`.
+
+### UI behavior
+
+- Section «AI пульс спринта»: collapsible block with draggable donut grid (`@dnd-kit`).
+- Click donut → full-width detail panel below grid (methodology + per-segment task cards).
+- `active_signals` reuses signal card styling (High/Medium/Low groups).
 
 ---
 
@@ -208,10 +289,10 @@ Frontend badge: `scopeAiJiraExport.tsx`.
 `PATCH /cms/scope-boards/{id}/layout`
 
 ```json
-{ "layout_order": ["capacity", "ai", "report", "queues", ...] }
+{ "layout_order": ["topItems", "capacity", "roleWorkload", "planInsights", "flowPace", "aiSummary", ...] }
 ```
 
-Block keys defined in frontend `ScopeBoardShell.tsx`.
+Block keys: `topItems`, `capacity`, `roleWorkload`, `planInsights`, `flowPace`, `aiSummary`, `report`, `priorityQueues`, `activity`, `snapshotSections`, `settings` — defined in `cms_api.py` (`SCOPE_LAYOUT_BLOCK_KEYS`) and mirrored in `web/src/features/cms/scope/scopeLayoutOrder.ts`.
 
 ---
 
@@ -253,4 +334,7 @@ sequenceDiagram
 | voting-service | `tests/test_scope_ai_*.py` | AI prompt, export |
 | voting-service | `tests/test_infer_scope_report_type.py` | report types |
 | voting-service | `tests/test_cms_scope_fetch.py` | refresh fetch |
+| voting-service | `tests/test_scope_flow_pace.py` | flow pace metrics, alerts, chart order |
+| voting-service | `tests/test_scope_layout.py` | layout block keys incl. flowPace |
 | jira-service | `tests/test_scope_board.py` | enrichment shape |
+| jira-service | `tests/test_scope_issue_start_date.py` | start_date field for cycle metrics |
