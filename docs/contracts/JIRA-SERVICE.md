@@ -235,6 +235,21 @@ HTTPException(502, detail=f"Jira service error: {truncated_body}")
 
 ---
 
+## Changelog enrichment (scope issues)
+
+При `enrich_changelog=true` jira-service добавляет к каждой issue поля для flow pace / cycle metrics:
+
+| Field | Source | Purpose |
+|---|---|---|
+| `status_durations` | `compute_issue_flow_timeline()` | сумма дней в каждом Jira-статусе |
+| `status_segments` | полная история changelog | хронологический timeline (все сегменты, не только последние) |
+| `status_flow_bucket_map` | `status_flow_buckets.py` | справочная группа: dev / test / pause / todo / done |
+| `start_date`, `resolution_date` | Jira fields | cycle time chart |
+
+voting-service `compute_scope_flow_pace()` читает эти поля из snapshot после refresh.
+
+---
+
 ## Tests
 
 `jira-service/tests/`:

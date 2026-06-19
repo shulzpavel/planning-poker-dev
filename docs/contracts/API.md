@@ -172,6 +172,8 @@ Field constraints (`_http_shared.py`): `summary: 1..500`, `jira_key: <=64`, `sto
 
 Scope create/update body: см. [SCOPE-BOARD.md](./SCOPE-BOARD.md).
 
+`GET /cms/scope-boards/{id}` возвращает `snapshot.flow_pace` (если команда включена и был refresh с changelog). См. [SCOPE-BOARD.md § AI пульс спринта](./SCOPE-BOARD.md#ai-пульс-спринта-flow_pace).
+
 ### Audit / users
 
 | Method | Path | Permission |

@@ -155,7 +155,7 @@ Computed on refresh from Plan/Unplan sections only (active + closed issues). Req
 ```typescript
 interface ScopeFlowPaceSnapshot {
   enabled: boolean
-  pace_status: "ok" | "watch" | "risk"
+  pace_status: "ok" | "attention" | "critical"
   chart_order?: string[]
   charts: {
     donuts: ScopeFlowPaceChart[]
@@ -184,10 +184,11 @@ interface ScopeFlowPaceChart {
       issue_key: string
       issue_url?: string
       summary?: string
-      metric_label?: string
-      metric_value?: string
-      detail?: string
-      alert?: ScopeFlowAlert      // active_signals only
+      metric_label?: string          // e.g. "Всего" for phase_time
+      metric_value?: string          // e.g. "438.2 дн." — total days in statuses
+      detail?: string                // chronological timeline for phase_time
+      alert?: ScopeFlowAlert         // active_signals only
+      flow_bucket?: string           // other charts only (not phase_time detail)
     }]
   }]
 }
@@ -201,9 +202,25 @@ Chart order is normalized server-side to the six known IDs; unknown IDs are drop
 
 - **Donut** — топ-8 статусов по суммарным дням; остальные в «Ещё N статусов»
 - **Центр** — число уникальных статусов
-- **Детализация** — список закрытых задач от самой длинной к короткой; внутри каждой — хронологический timeline по changelog (без долей и процентов)
+- **Детализация** — один сегмент `issues`: закрытые задачи **от самой длинной к короткой** (`metric_value` = сумма дней во всех статусах); внутри карточки — **хронологический timeline** (`detail`), без долей и процентов
 
-Справочная группа (`status_flow_bucket_map`) — из `status_flow_buckets.py`, используется в других графиках, не в детализации `phase_time`.
+Пример `detail_segments` для одной задачи:
+
+```json
+{
+  "key": "issues",
+  "label": "Задачи · 84",
+  "items": [{
+    "issue_key": "FLEX-123",
+    "summary": "…",
+    "metric_label": "Всего",
+    "metric_value": "438.2 дн.",
+    "detail": "Backlog 120.0 дн. · К выполнению 98.0 дн. · В работе 34.0 дн. · …"
+  }]
+}
+```
+
+Справочная группа (`status_flow_bucket_map`) — из `status_flow_buckets.py`, используется в других графиках (`qa_iterations`, сигналы), **не** в детализации `phase_time`. Поле `status_catalog` удалено.
 
 ### Chart order API
 
@@ -218,7 +235,9 @@ On read, `cms_store` merges `flow_pace_chart_order` with snapshot donuts via `ap
 ### UI behavior
 
 - Section «AI пульс спринта»: collapsible block with draggable donut grid (`@dnd-kit`).
-- Click donut → full-width detail panel below grid (methodology + per-segment task cards).
+- Click donut → full-width detail panel below grid (methodology + cards).
+- **`phase_time`**: flat task list (no status groups, no share table); each card shows issue key, summary, total days, chronological timeline.
+- Other donuts: grouped `detail_segments` with per-segment task cards.
 - `active_signals` reuses signal card styling (High/Medium/Low groups).
 
 ---
@@ -344,7 +363,9 @@ sequenceDiagram
 | voting-service | `tests/test_scope_ai_*.py` | AI prompt, export |
 | voting-service | `tests/test_infer_scope_report_type.py` | report types |
 | voting-service | `tests/test_cms_scope_fetch.py` | refresh fetch |
-| voting-service | `tests/test_scope_flow_pace.py` | flow pace metrics, alerts, chart order |
+| voting-service | `tests/test_scope_flow_pace.py` | flow pace metrics, alerts, chart order, phase_time task detail |
 | voting-service | `tests/test_scope_layout.py` | layout block keys incl. flowPace |
 | jira-service | `tests/test_scope_board.py` | enrichment shape |
+| jira-service | `tests/test_jira_flow_timeline.py` | status_durations, status_segments, status_flow_bucket_map |
+| jira-service | `tests/test_status_flow_buckets.py` | Jira status → dev/test/pause/todo/done |
 | jira-service | `tests/test_scope_issue_start_date.py` | start_date field for cycle metrics |
