@@ -195,6 +195,20 @@ interface ScopeFlowPaceChart {
 
 Chart order is normalized server-side to the six known IDs; unknown IDs are dropped, missing IDs appended at default positions.
 
+### Chart: «Время в фазах» (`phase_time`)
+
+Три рабочие фазы из `status_bucket_durations` (jira-service `compute_issue_flow_timeline` → `_status_flow_bucket`):
+
+| Bucket | Фаза | Статусы Jira (правила) |
+|---|---|---|
+| `dev` | Dev | dev/in progress/разработ/в работе и др. (`JIRA_DEV_STATUS_KEYWORDS`), кроме test/pause |
+| `test` | Test/Release | test/qa/тестирование, к тестированию, к релизу |
+| `pause` | Пауза | pause/on hold/blocked/пауз/блок |
+
+**Не фазы** (считаются в changelog, но не в donut): `todo` (backlog/open), `done` (Готово), `other` (нераспознанные).
+
+Donut — сумма дней по закрытым задачам; детализация: задача может быть в нескольких сегментах (dev + test + pause).
+
 ### Chart order API
 
 ```
