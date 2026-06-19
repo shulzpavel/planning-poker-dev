@@ -201,10 +201,9 @@ Chart order is normalized server-side to the six known IDs; unknown IDs are drop
 
 - **Donut** — топ-8 статусов по суммарным дням; остальные в «Ещё N статусов»
 - **Центр** — число уникальных статусов
-- **`status_catalog`** — полная таблица: статус, справочная группа (dev/test/pause/todo/done), дни, доля %, число задач
-- **Детализация** — по каждому статусу список задач: дни в статусе, доля от timeline задачи, полный timeline
+- **Детализация** — список закрытых задач от самой длинной к короткой; внутри каждой — хронологический timeline по changelog (без долей и процентов)
 
-Справочная группа (`status_flow_bucket_map`) — из `status_flow_buckets.py`, не отдельная фаза в donut.
+Справочная группа (`status_flow_bucket_map`) — из `status_flow_buckets.py`, используется в других графиках, не в детализации `phase_time`.
 
 ### Chart order API
 
