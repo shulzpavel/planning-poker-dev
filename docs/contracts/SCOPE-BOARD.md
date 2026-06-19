@@ -197,17 +197,19 @@ Chart order is normalized server-side to the six known IDs; unknown IDs are drop
 
 ### Chart: «Время в фазах» (`phase_time`)
 
-Три рабочие фазы из `status_bucket_durations` (jira-service `compute_issue_flow_timeline` → `_status_flow_bucket`):
+Классификация: `jira-service/app/utils/status_flow_buckets.py` → `classify_status_flow_bucket()`.  
+Changelog: `compute_issue_flow_timeline()` → `status_bucket_durations` + `status_flow_bucket_map` (статус → bucket).
 
-| Bucket | Фаза | Статусы Jira (правила) |
+| Bucket | Фаза в donut | Статусы Jira |
 |---|---|---|
-| `dev` | Dev | dev/in progress/разработ/в работе и др. (`JIRA_DEV_STATUS_KEYWORDS`), кроме test/pause |
-| `test` | Test/Release | test/qa/тестирование, к тестированию, к релизу |
-| `pause` | Пауза | pause/on hold/blocked/пауз/блок |
+| `dev` | Dev | В работе, In Progress, In Development, Ревью, Code Review, Review, Ready for Dev, Reopened, … + `JIRA_FLOW_DEV_STATUS_KEYWORDS` |
+| `test` | Test/Release | Тестирование, К тестированию, К релизу, Ready for Test, In Test, QA, UAT, Acceptance, Ready for Release, … + `JIRA_FLOW_TEST_STATUS_KEYWORDS` |
+| `pause` | Пауза | Пауза, Pause, On Hold, Blocked, Deferred + pause/blocked/пауз/блок в названии |
+| `todo` | *(не фаза)* | Backlog, Бэклог, К выполнению, To Do, Open, Selected for Development |
+| `done` | *(не фаза)* | Готово, Done, Closed, Resolved, Cancelled |
+| `other` | *(только пустое имя)* | — |
 
-**Не фазы** (считаются в changelog, но не в donut): `todo` (backlog/open), `done` (Готово), `other` (нераспознанные).
-
-Donut — сумма дней по закрытым задачам; детализация: задача может быть в нескольких сегментах (dev + test + pause).
+Нераспознанный активный статус → **Dev** (не «прочее»). Donut — сумма dev+test+pause по закрытым; детализация показывает разбивку по каждому статусу Jira.
 
 ### Chart order API
 
