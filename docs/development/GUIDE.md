@@ -100,6 +100,8 @@ try {
 | 429 | show rate limit message, disable button temporarily |
 | 502/503 | show dependency failure, preserve local state |
 
+List pagination (first page = 10 items, cursor on «Показать ещё»): [LISTS.md](./LISTS.md).
+
 ---
 
 ## Rate limits
