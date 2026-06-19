@@ -22,6 +22,21 @@ Body: { username, password }
 
 **Frontend:** `credentials: "include"` в `cmsFetch()`. LocalStorage hint `planning_poker_cms_auth` — только UX-флаг, не секрет.
 
+### Bootstrap admin (one-time)
+
+При старте `voting-service` вызывает `ensure_access_defaults(CMS_USERNAME, CMS_PASSWORD)`:
+
+- если учётки с таким `username` **нет** — создаётся superadmin с паролем из env и ролью `superadmin`;
+- если учётка **уже есть** — `ON CONFLICT DO NOTHING`: пароль, `is_active`, `is_superuser` **не перезаписываются**.
+
+Следствия:
+
+- ротация пароля и деактивация bootstrap-админа переживают рестарт;
+- скомпрометированный `CMS_PASSWORD` в env **не** восстанавливает доступ после смены пароля в CMS;
+- дальнейшее управление — только через CMS Access (`/cms/access`).
+
+Env: `CMS_USERNAME`, `CMS_PASSWORD` (см. [GUIDE.md](../development/GUIDE.md#environment-variables)).
+
 ### Logout
 
 ```
