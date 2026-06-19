@@ -183,6 +183,7 @@ Module: `session_finish_notify.py`.
 | `test_ai_summary_*.py` | AI prompt + Jira export |
 | `test_close_session.py` | finish flow |
 | `test_app_jira_sp_rbac.py` | Jira SP sync team scope |
+| `test_cms_destructive_team_scope.py` | token revoke + participant hard-delete team scope |
 | `test_telegram_session_alert.py` | alerts |
 
 ---

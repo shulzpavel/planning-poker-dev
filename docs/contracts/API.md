@@ -128,7 +128,8 @@ Field constraints (`_http_shared.py`): `summary: 1..500`, `jira_key: <=64`, `sto
 | GET | `/cms/sessions/{id}` | `cms.sessions.view` |
 | PATCH | `/cms/sessions/{id}` | rename |
 | POST | `/cms/sessions/{id}/close` | `app.sessions.manage` |
-| DELETE | `/cms/sessions/{id}` | hard delete |
+| DELETE | `/cms/sessions/{id}` | hard delete + team scope |
+| DELETE | `/cms/tokens/{id}` | `app.sessions.manage` + team scope via parent session |
 | CRUD | `/cms/sessions/{id}/tasks/*` | `cms.tasks.manage` |
 
 ### Access (RBAC admin)
@@ -176,7 +177,7 @@ Scope create/update body: см. [SCOPE-BOARD.md](./SCOPE-BOARD.md).
 |---|---|---|
 | GET | `/cms/events` | `cms.events.view` |
 | GET | `/cms/users` | `cms.users.view` |
-| DELETE | `/cms/users/{id}` | `cms.web_participants.delete` + confirm_name |
+| DELETE | `/cms/users/{id}` | `cms.web_participants.delete` + confirm_name + team scope |
 
 ---
 
