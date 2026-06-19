@@ -20,11 +20,13 @@ Optimistic locking: `WATCH` + retry в `RedisSessionRepository.mutate_session()`
 | `web_retro:{token}` | `{retro_id}` |
 | `retro_participant:{token}:{pid}` | participant identity |
 
-### CMS session (TTL 24h, sliding)
+### CMS session (TTL 24h, absolute expiry)
 
 | Key | Value |
 |---|---|
-| `cms_token:{token}` | `{admin_id, username, ip}` |
+| `cms_token:{token}` | `{admin_id, username, ip, issued_at, expires_at, token_version}` |
+
+Redis TTL совпадает с `CMS_TOKEN_TTL_SECONDS` (garbage collection). **Sliding refresh отключён** — срок жизни фиксируется в `expires_at` при login. `token_version` сверяется с `cms_admin_accounts.token_version` (инкремент при смене пароля).
 
 ### AI jobs (TTL 1h)
 
