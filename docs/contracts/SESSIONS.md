@@ -136,9 +136,18 @@ Rate limit: 20/hour per actor.
 
 ```
 POST /app/sessions/{chat_id}/jira-story-points/sync
+Body: { skip_errors?: bool }   // default true
 ```
 
-Writes final estimates to Jira via jira-service. Supports split fields per role.
+**Auth:** CMS cookie + `app.sessions.manage` + **team scope** (`_require_manager_session`).
+
+Writes final estimates from the last finished batch to Jira via jira-service. Supports split fields per role.
+
+| Response | When |
+|---|---|
+| 200 | `{ updated, failed, skipped }` |
+| 400 | no completed batch |
+| 404 | session not found **or** foreign team (no existence leak) |
 
 ---
 
@@ -173,6 +182,7 @@ Module: `session_finish_notify.py`.
 | `test_estimation.py` | SP calculation |
 | `test_ai_summary_*.py` | AI prompt + Jira export |
 | `test_close_session.py` | finish flow |
+| `test_app_jira_sp_rbac.py` | Jira SP sync team scope |
 | `test_telegram_session_alert.py` | alerts |
 
 ---

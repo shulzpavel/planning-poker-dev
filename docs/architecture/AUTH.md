@@ -81,11 +81,15 @@ principal: CmsPrincipal = AuthDep
 # конкретное permission
 principal = Depends(require_permission(PERM_PLANNER_VIEW))
 
-# manager cockpit
-principal = Depends(_manager_dep)  # PERM_APP_SESSIONS_MANAGE + team scope
+# manager cockpit — permission only
+principal = Depends(_manager_dep)  # PERM_APP_SESSIONS_MANAGE
+
+# manager cockpit — session-scoped (permission + team check)
+principal = Depends(_require_manager_session)
 ```
 
 403 если `not principal.can(permission)`.
+404 если сессия принадлежит чужой команде (`assert_record_access` — без утечки существования).
 
 ---
 

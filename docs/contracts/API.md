@@ -90,12 +90,12 @@ Field constraints (`_http_shared.py`): `summary: 1..500`, `jira_key: <=64`, `sto
 
 ### Reports / Jira writeback
 
-| Method | Path |
-|---|---|
-| GET | `/app/sessions/{chat_id}/summary` |
-| GET | `/app/sessions/{chat_id}/summary.csv` |
-| GET | `/app/sessions/{chat_id}/summary.md` |
-| POST | `/app/sessions/{chat_id}/jira-story-points/sync` |
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/app/sessions/{chat_id}/summary` | |
+| GET | `/app/sessions/{chat_id}/summary.csv` | |
+| GET | `/app/sessions/{chat_id}/summary.md` | |
+| POST | `/app/sessions/{chat_id}/jira-story-points/sync` | team scope via `_require_manager_session` |
 
 ---
 
