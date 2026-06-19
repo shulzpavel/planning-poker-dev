@@ -160,6 +160,7 @@ Field constraints (`_http_shared.py`): `summary: 1..500`, `jira_key: <=64`, `sto
 | POST | `/cms/scope-boards/{id}/refresh` | Jira → snapshot |
 | POST | `/cms/scope-boards/{id}/analyze` | AI (sync or `?async=1`) |
 | GET | `/cms/scope-boards/{id}/analyze/jobs/{job_id}` | poll |
+| GET | `/cms/scope-boards/{id}/ai-summary/jira-export` | Jira export poll (light) |
 | POST | `/cms/scope-boards/{id}/questions` | manual question |
 | POST | `/cms/scope-boards/{id}/questions/{qid}/resolve` | |
 | POST/DELETE | `/cms/scope-boards/{id}/top-items[/{id}]` | |

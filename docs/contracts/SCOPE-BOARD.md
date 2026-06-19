@@ -58,7 +58,7 @@ Release boards: один блок «Текущий релиз» + `release_conte
 1. Auth: cms.planner.view + team scope
 2. Rate limit: actor (30/h) + board (12/h)
 3. Fetch scope sections ──parallel──► jira-service POST /search/scope
-4. Fetch todo_jql, test_jql (enrich_changelog=true)
+4. Fetch todo_jql, test_jql (`enrich_changelog=false` — flow pace берётся из plan/unplan)
 5. If report_type=release: fetch release JQLs + version metadata
 6. Failure policy:
    - all JQL failed → 503, snapshot unchanged
@@ -309,7 +309,27 @@ Validation: `scope_ai_llm.py`. Stored in `cms_scope_boards.ai_summary`.
 
 Module: `scope_ai_jira_export.py`. Skip if summary hash unchanged.
 
-Frontend badge: `scopeAiJiraExport.tsx`.
+Frontend badge: `scopeAiJiraExport.tsx`. Poll: `GET /cms/scope-boards/{id}/ai-summary/jira-export` (lightweight status, без полного board).
+
+---
+
+## Partial mutation responses
+
+Snapshot PATCH endpoints (todo, top, questions, queues, issue/report comments, layout metadata, flow-pace order) возвращают **slim board**:
+
+```json
+{
+  "id": 1,
+  "snapshot_partial": true,
+  "snapshot": { "todo_items": [ "...only changed keys..." ] },
+  "ai_summary": null,
+  "ai_summary_history": []
+}
+```
+
+Клиент (`scopeBoardMerge.ts`) мержит `snapshot` в локальный board; `ai_summary*` не затираются при `null`/пустой history.
+
+Полный board: `GET`, `POST` create, `POST` refresh, `PATCH` config, `POST` analyze.
 
 ---
 

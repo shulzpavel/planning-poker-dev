@@ -194,6 +194,9 @@ Update existing ADF comment (scope AI re-export).
 | `JIRA_PLAN_STATUS_FIELD`, `JIRA_PLAN_CHANGE_REASON_FIELD` | scope plan metadata |
 | `JIRA_DEMO_FALLBACK` | return demo data if misconfigured |
 | `JIRA_CACHE_MAX_ITEMS` | in-memory cache size |
+
+Scope writes (due date, significance, comments) invalidate **only affected issue keys** in cache instead of clearing the whole cache.
+
 | `JIRA_RETRY_ATTEMPTS` | transient HTTP retries (default `3`) |
 | `JIRA_MAX_CONCURRENT_REQUESTS` | in-flight Jira HTTP cap per client (default `6`) |
 | `GITLAB_*` | optional role evidence |
