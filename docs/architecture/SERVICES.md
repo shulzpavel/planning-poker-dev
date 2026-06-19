@@ -58,7 +58,7 @@ HTTP session — singleton `app.state.http_session` (aiohttp pool). **Не со�
 | Path | Ответ |
 |---|---|
 | `GET /health/` | `{status: "healthy", service: "voting-service", version: "1.0.0"}` |
-| `GET /health/ready` | `{status: "ready"}` или `{status: "not_ready", error}` — **PING** на `app.state.web_redis`, **SELECT 1** на `repository`/`cms_store` pools; не создаёт новые адаптеры |
+| `GET /health/ready` | `{status: "ready"}` (200) или `{status: "not_ready", error}` (**503**) — **PING** на `app.state.web_redis`, **SELECT 1** на `repository`/`cms_store` pools; не создаёт новые адаптеры |
 | `GET /health/live` | `{status: "alive"}` |
 
 ### Ограничения
