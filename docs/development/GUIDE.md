@@ -54,6 +54,7 @@
 | Retro domain | voting-service | `app/domain/retro.py`, `retro_api.py` |
 | RBAC definitions | voting-service | `cms_rbac.py` |
 | CMS navigation | web | `src/features/cms/navigation.ts` |
+| CMS list grouping by team | web | `src/features/cms/components/teamGrouping.ts`, `TeamGroupedSections.tsx` |
 | Deploy / Caddy | dev | `infra/caddy/`, `infra/deploy/` |
 | CI Telegram alerts | dev | `.github/workflows/ci-notify-*.yml` |
 
