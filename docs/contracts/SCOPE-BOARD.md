@@ -195,21 +195,16 @@ interface ScopeFlowPaceChart {
 
 Chart order is normalized server-side to the six known IDs; unknown IDs are dropped, missing IDs appended at default positions.
 
-### Chart: «Время в фазах» (`phase_time`)
+### Chart: «Время в статусах» (`phase_time`)
 
-Классификация: `jira-service/app/utils/status_flow_buckets.py` → `classify_status_flow_bucket()`.  
-Changelog: `compute_issue_flow_timeline()` → `status_bucket_durations` + `status_flow_bucket_map` (статус → bucket).
+Источник: `status_durations` из Jira changelog (`compute_issue_flow_timeline`). Только закрытые задачи.
 
-| Bucket | Фаза в donut | Статусы Jira |
-|---|---|---|
-| `dev` | Dev | В работе, In Progress, In Development, Ревью, Code Review, Review, Ready for Dev, Reopened, … + `JIRA_FLOW_DEV_STATUS_KEYWORDS` |
-| `test` | Test/Release | Тестирование, К тестированию, К релизу, Ready for Test, In Test, QA, UAT, Acceptance, Ready for Release, … + `JIRA_FLOW_TEST_STATUS_KEYWORDS` |
-| `pause` | Пауза | Пауза, Pause, On Hold, Blocked, Deferred + pause/blocked/пауз/блок в названии |
-| `todo` | *(не фаза)* | Backlog, Бэклог, К выполнению, To Do, Open, Selected for Development |
-| `done` | *(не фаза)* | Готово, Done, Closed, Resolved, Cancelled |
-| `other` | *(только пустое имя)* | — |
+- **Donut** — топ-8 статусов по суммарным дням; остальные в «Ещё N статусов»
+- **Центр** — число уникальных статусов
+- **`status_catalog`** — полная таблица: статус, справочная группа (dev/test/pause/todo/done), дни, доля %, число задач
+- **Детализация** — по каждому статусу список задач: дни в статусе, доля от timeline задачи, полный timeline
 
-Нераспознанный активный статус → **Dev** (не «прочее»). Donut — сумма dev+test+pause по закрытым; детализация показывает разбивку по каждому статусу Jira.
+Справочная группа (`status_flow_bucket_map`) — из `status_flow_buckets.py`, не отдельная фаза в donut.
 
 ### Chart order API
 
