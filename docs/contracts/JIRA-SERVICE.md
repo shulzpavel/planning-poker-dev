@@ -217,7 +217,7 @@ curl http://localhost:8001/health/ready
 
 `JiraHttpClient` (`app/adapters/jira_http.py`) retries transient Jira responses (`429`, `5xx`):
 
-- reads `Retry-After` (seconds or HTTP-date) and waits at least that long;
+- reads `Retry-After` (seconds or HTTP-date) and waits exactly that long (not capped by backoff `max_delay`);
 - otherwise exponential backoff with full jitter (`0.5s` base, `60s` cap);
 - caps in-flight Jira HTTP calls with `JIRA_MAX_CONCURRENT_REQUESTS` (default `6`) so parallel scope enrichment does not amplify throttling.
 
