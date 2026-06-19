@@ -13,7 +13,8 @@ deploy_sync_repo_main() {
 
   echo "Syncing ${repo_name} to origin/main..."
   git -C "$repo_dir" fetch --prune origin main
-  git -C "$repo_dir" checkout -B main origin/main
+  git -C "$repo_dir" checkout -f -B main origin/main
+  git -C "$repo_dir" reset --hard origin/main
 }
 
 deploy_acquire_lock() {
