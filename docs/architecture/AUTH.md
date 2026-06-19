@@ -14,11 +14,14 @@ Body: { username, password }
 ### Проверка на каждом запросе
 
 1. Cookie `cms_token` или header `Authorization: Bearer <token>`.
-2. Redis lookup: `cms_token:{token}` → `{admin_id, username, ip}`.
+2. Redis lookup: `cms_token:{token}` → `{admin_id, username, ip, issued_at, expires_at, token_version}`.
 3. Postgres: `get_admin_principal(admin_id)` — join roles, permissions, pages, teams.
-4. Sliding TTL: `EXPIRE cms_token:{token}` → 24h.
+4. **Absolute expiry:** token отклоняется, если `now >= expires_at` (sliding TTL **не** продлевает сессию).
+5. **Token version:** `token_version` в Redis должен совпадать с `cms_admin_accounts.token_version`; при смене пароля версия инкрементируется и все старые токены инвалидируются.
 
-401 если token missing / expired / admin deactivated.
+401 если token missing / expired / version mismatch / admin deactivated.
+
+**Cookie Secure:** по умолчанию `Secure=true` вне dev (`APP_ENV=dev` или явный `CMS_COOKIE_SECURE=false` для local HTTP). Prod: `CMS_COOKIE_SECURE=true` в `docker-compose.prod.yml`.
 
 **Frontend:** `credentials: "include"` в `cmsFetch()`. LocalStorage hint `planning_poker_cms_auth` — только UX-флаг, не секрет.
 
