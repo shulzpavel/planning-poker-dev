@@ -145,6 +145,46 @@ except Exception as exc:
 PY
 }
 
+deploy_maintenance_compose() {
+  local root_dir="${1:?root dir required}"
+  local compose_file="${2:-docker-compose.prod.yml}"
+  local env_file="${3:-.env}"
+  docker compose -f "$root_dir/$compose_file" --env-file "$root_dir/$env_file"
+}
+
+deploy_maintenance_enable() {
+  local root_dir="${1:?root dir required}"
+  local service="${2:?service required}"
+  local compose_file="${3:-docker-compose.prod.yml}"
+  local env_file="${4:-.env}"
+
+  local payload
+  payload="$(SERVICE="$service" python3 - <<'PY'
+import json
+import os
+
+print(json.dumps({"active": True, "service": os.environ["SERVICE"]}, ensure_ascii=False))
+PY
+)"
+
+  echo "Enabling maintenance banner for ${service}..."
+  if ! deploy_maintenance_compose "$root_dir" "$compose_file" "$env_file" exec -T redis \
+    redis-cli SET system:maintenance "$payload" EX 1800 >/dev/null; then
+    echo "Warning: failed to enable maintenance banner in Redis" >&2
+    return 0
+  fi
+}
+
+deploy_maintenance_disable() {
+  local root_dir="${1:?root dir required}"
+  local compose_file="${2:-docker-compose.prod.yml}"
+  local env_file="${3:-.env}"
+
+  echo "Disabling maintenance banner..."
+  deploy_maintenance_compose "$root_dir" "$compose_file" "$env_file" exec -T redis \
+    redis-cli DEL system:maintenance >/dev/null 2>&1 || true
+}
+
 deploy_notify_send() {
   local status="$1"
   local details="$2"

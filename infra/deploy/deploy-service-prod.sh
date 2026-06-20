@@ -40,6 +40,7 @@ export DEPLOY_SERVICE DEPLOY_SCOPE
 
 notify_failure() {
   local exit_code=$?
+  deploy_maintenance_disable "$ROOT_DIR" "$COMPOSE_FILE" "$ENV_FILE"
   deploy_notify_send "FAILED" "Сервис: ${SERVICE}. Exit code: ${exit_code}" "$ROOT_DIR"
   exit "$exit_code"
 }
@@ -58,6 +59,8 @@ deploy_sync_repo_main "$REPO_DIR"
 
 echo "Building ${SERVICE}..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "$SERVICE"
+
+deploy_maintenance_enable "$ROOT_DIR" "$SERVICE" "$COMPOSE_FILE" "$ENV_FILE"
 
 echo "Restarting ${SERVICE}..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d "$SERVICE"
@@ -79,6 +82,8 @@ if [[ "$SERVICE" == "voting-service" || "$SERVICE" == "jira-service" ]]; then
 fi
 
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps "$SERVICE"
+
+deploy_maintenance_disable "$ROOT_DIR" "$COMPOSE_FILE" "$ENV_FILE"
 
 deploy_notify_send "OK" "Образ собран, контейнер ${SERVICE} перезапущен." "$ROOT_DIR"
 echo "Done."

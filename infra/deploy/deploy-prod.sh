@@ -26,6 +26,7 @@ export DEPLOY_SERVICES_BLOCK
 
 notify_failure() {
   local exit_code=$?
+  deploy_maintenance_disable "$ROOT_DIR" "$COMPOSE_FILE" "$ENV_FILE"
   deploy_notify_send "FAILED" "Полный деплой (${SERVICES[*]}). Exit code: ${exit_code}" "$ROOT_DIR"
   exit "$exit_code"
 }
@@ -44,6 +45,8 @@ export DEPLOY_SERVICES_BLOCK
 
 echo "Building images: ${SERVICES[*]}..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "${SERVICES[@]}"
+
+deploy_maintenance_enable "$ROOT_DIR" "full stack" "$COMPOSE_FILE" "$ENV_FILE"
 
 echo "Restarting containers..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d "${SERVICES[@]}"
@@ -66,6 +69,8 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps "${SERVICES[@]}"
 
 echo "Reloading caddy (Caddyfile is bind-mounted from the host)..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate caddy
+
+deploy_maintenance_disable "$ROOT_DIR" "$COMPOSE_FILE" "$ENV_FILE"
 
 deploy_notify_send "OK" "Образы собраны, контейнеры перезапущены, health-check пройден." "$ROOT_DIR"
 echo "Done."
