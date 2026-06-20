@@ -57,10 +57,10 @@ deploy_notify_send "STARTED" "Сборка и перезапуск ${SERVICE}." 
 echo "Pulling ${REPO_NAME}..."
 deploy_sync_repo_main "$REPO_DIR"
 
+deploy_maintenance_enable "$ROOT_DIR" "$SERVICE" "$COMPOSE_FILE" "$ENV_FILE"
+
 echo "Building ${SERVICE}..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "$SERVICE"
-
-deploy_maintenance_enable "$ROOT_DIR" "$SERVICE" "$COMPOSE_FILE" "$ENV_FILE"
 
 echo "Restarting ${SERVICE}..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d "$SERVICE"

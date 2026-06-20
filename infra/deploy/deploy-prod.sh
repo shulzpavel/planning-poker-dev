@@ -43,10 +43,10 @@ echo "Pulling latest main from all microservice repos..."
 DEPLOY_SERVICES_BLOCK="$(deploy_notify_format_services "$ROOT_DIR" "${SERVICES[@]}")"
 export DEPLOY_SERVICES_BLOCK
 
+deploy_maintenance_enable "$ROOT_DIR" "full stack" "$COMPOSE_FILE" "$ENV_FILE"
+
 echo "Building images: ${SERVICES[*]}..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "${SERVICES[@]}"
-
-deploy_maintenance_enable "$ROOT_DIR" "full stack" "$COMPOSE_FILE" "$ENV_FILE"
 
 echo "Restarting containers..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d "${SERVICES[@]}"

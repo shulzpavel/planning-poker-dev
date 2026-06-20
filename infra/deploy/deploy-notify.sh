@@ -158,18 +158,59 @@ deploy_maintenance_enable() {
   local compose_file="${3:-docker-compose.prod.yml}"
   local env_file="${4:-.env}"
 
-  local payload
-  payload="$(SERVICE="$service" python3 - <<'PY'
+  echo "Enabling maintenance banner for ${service}..."
+  if ! ROOT_DIR="$root_dir" COMPOSE_FILE="$compose_file" ENV_FILE="$env_file" SERVICE="$service" python3 - <<'PY'
 import json
 import os
+import subprocess
+import sys
 
-print(json.dumps({"active": True, "service": os.environ["SERVICE"]}, ensure_ascii=False))
+root_dir = os.environ["ROOT_DIR"]
+compose_file = os.environ["COMPOSE_FILE"]
+env_file = os.environ["ENV_FILE"]
+service = os.environ["SERVICE"]
+payload = json.dumps({"active": True, "service": service}, ensure_ascii=False)
+
+def redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            f"{root_dir}/{compose_file}",
+            "--env-file",
+            f"{root_dir}/{env_file}",
+            "exec",
+            "-T",
+            "redis",
+            "redis-cli",
+            *args,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+set_result = redis_cli("SET", "system:maintenance", payload, "EX", "1800")
+if set_result.returncode != 0 or "OK" not in (set_result.stdout or ""):
+    print(
+        f"Warning: failed to enable maintenance banner: {(set_result.stderr or set_result.stdout).strip()}",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+verify = redis_cli("GET", "system:maintenance")
+stored = (verify.stdout or "").strip()
+if stored != payload:
+    print(
+        f"Warning: maintenance banner verify mismatch: stored={stored!r} expected={payload!r}",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+print(f"Maintenance banner enabled: {stored}")
 PY
-)"
-
-  echo "Enabling maintenance banner for ${service}..."
-  if ! deploy_maintenance_compose "$root_dir" "$compose_file" "$env_file" exec -T redis \
-    redis-cli SET system:maintenance "$payload" EX 1800 >/dev/null; then
+  then
     echo "Warning: failed to enable maintenance banner in Redis" >&2
     return 0
   fi
@@ -181,8 +222,34 @@ deploy_maintenance_disable() {
   local env_file="${3:-.env}"
 
   echo "Disabling maintenance banner..."
-  deploy_maintenance_compose "$root_dir" "$compose_file" "$env_file" exec -T redis \
-    redis-cli DEL system:maintenance >/dev/null 2>&1 || true
+  ROOT_DIR="$root_dir" COMPOSE_FILE="$compose_file" ENV_FILE="$env_file" python3 - <<'PY' || true
+import os
+import subprocess
+
+root_dir = os.environ["ROOT_DIR"]
+compose_file = os.environ["COMPOSE_FILE"]
+env_file = os.environ["ENV_FILE"]
+
+subprocess.run(
+    [
+        "docker",
+        "compose",
+        "-f",
+        f"{root_dir}/{compose_file}",
+        "--env-file",
+        f"{root_dir}/{env_file}",
+        "exec",
+        "-T",
+        "redis",
+        "redis-cli",
+        "DEL",
+        "system:maintenance",
+    ],
+    capture_output=True,
+    text=True,
+    check=False,
+)
+PY
 }
 
 deploy_notify_send() {
