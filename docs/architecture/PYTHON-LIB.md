@@ -12,7 +12,7 @@
 
 ```text
 # requirements.txt (both backend services)
-planning-poker-common @ git+https://github.com/shulzpavel/planning-poker-python-lib@v0.1.2
+planning-poker-common @ https://github.com/shulzpavel/planning-poker-python-lib/archive/refs/tags/v0.1.2.tar.gz
 ```
 
 Docker build (multi-stage or build-arg):
