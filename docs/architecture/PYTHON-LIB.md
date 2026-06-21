@@ -4,7 +4,7 @@
 
 ## Package
 
-- Repo: `shulzpavel/planning-poker-python-lib` (to be created)
+- Repo: [shulzpavel/planning-poker-python-lib](https://github.com/shulzpavel/planning-poker-python-lib) — **current pin: `v0.1.2`**
 - Import path: `planning_poker_common`
 - Stdlib-only pure modules: `jira/text`, `jira/role_contributors`, `scope/domain`, `ports/jira_client`
 
@@ -12,7 +12,7 @@
 
 ```text
 # requirements.txt (both backend services)
-planning-poker-common @ git+https://github.com/shulzpavel/planning-poker-python-lib@v0.1.0
+planning-poker-common @ git+https://github.com/shulzpavel/planning-poker-python-lib@v0.1.2
 ```
 
 Docker build (multi-stage or build-arg):
