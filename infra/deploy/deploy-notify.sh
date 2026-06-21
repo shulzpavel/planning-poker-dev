@@ -169,7 +169,11 @@ root_dir = os.environ["ROOT_DIR"]
 compose_file = os.environ["COMPOSE_FILE"]
 env_file = os.environ["ENV_FILE"]
 service = os.environ["SERVICE"]
+ref_key = "system:maintenance:refcount"
+main_key = "system:maintenance"
+ttl = "1800"
 payload = json.dumps({"active": True, "service": service}, ensure_ascii=False)
+
 
 def redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
@@ -191,7 +195,14 @@ def redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
         check=False,
     )
 
-set_result = redis_cli("SET", "system:maintenance", payload, "EX", "1800")
+
+incr = redis_cli("INCR", ref_key)
+if incr.returncode != 0:
+    print(f"Warning: failed to increment maintenance ref: {(incr.stderr or incr.stdout).strip()}", file=sys.stderr)
+    sys.exit(1)
+
+redis_cli("EXPIRE", ref_key, ttl)
+set_result = redis_cli("SET", main_key, payload, "EX", ttl)
 if set_result.returncode != 0 or "OK" not in (set_result.stdout or ""):
     print(
         f"Warning: failed to enable maintenance banner: {(set_result.stderr or set_result.stdout).strip()}",
@@ -199,7 +210,7 @@ if set_result.returncode != 0 or "OK" not in (set_result.stdout or ""):
     )
     sys.exit(1)
 
-verify = redis_cli("GET", "system:maintenance")
+verify = redis_cli("GET", main_key)
 stored = (verify.stdout or "").strip()
 if stored != payload:
     print(
@@ -208,11 +219,11 @@ if stored != payload:
     )
     sys.exit(1)
 
-print(f"Maintenance banner enabled: {stored}")
+print(f"Maintenance banner enabled (ref={(incr.stdout or '').strip()}): {stored}")
 PY
   then
     echo "Warning: failed to enable maintenance banner in Redis" >&2
-    return 0
+    return 1
   fi
 }
 
@@ -229,26 +240,45 @@ import subprocess
 root_dir = os.environ["ROOT_DIR"]
 compose_file = os.environ["COMPOSE_FILE"]
 env_file = os.environ["ENV_FILE"]
+ref_key = "system:maintenance:refcount"
+main_key = "system:maintenance"
+ttl = "1800"
 
-subprocess.run(
-    [
-        "docker",
-        "compose",
-        "-f",
-        f"{root_dir}/{compose_file}",
-        "--env-file",
-        f"{root_dir}/{env_file}",
-        "exec",
-        "-T",
-        "redis",
-        "redis-cli",
-        "DEL",
-        "system:maintenance",
-    ],
-    capture_output=True,
-    text=True,
-    check=False,
-)
+
+def redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            f"{root_dir}/{compose_file}",
+            "--env-file",
+            f"{root_dir}/{env_file}",
+            "exec",
+            "-T",
+            "redis",
+            "redis-cli",
+            *args,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+decr = redis_cli("DECR", ref_key)
+try:
+    count = int((decr.stdout or "0").strip())
+except ValueError:
+    count = 0
+
+if count <= 0:
+    redis_cli("DEL", ref_key, main_key)
+    print("Maintenance banner disabled (ref<=0)")
+else:
+    redis_cli("EXPIRE", ref_key, ttl)
+    redis_cli("EXPIRE", main_key, ttl)
+    print(f"Maintenance ref decremented to {count}")
 PY
 }
 

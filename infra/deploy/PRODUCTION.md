@@ -124,6 +124,19 @@ cd /opt/planning-poker-dev
 
 Telegram deploy alerts include the service name, repository, and deployed commit SHA.
 
+## Maintenance banner (deploy)
+
+During `deploy-prod.sh` or `deploy-service-prod.sh`, a Redis key `system:maintenance`
+shows a site-wide banner (JSON: `active`, `service`). Keys expire after 30 minutes.
+
+**Ref-count:** parallel single-service deploys (e.g. jira-service + voting-service CI)
+each increment `system:maintenance:refcount` on start and decrement on exit (success
+or failure). The banner is removed only when the count reaches zero, so one failed
+deploy cannot leave maintenance stuck while another service is still rolling out.
+
+Scripts use an `EXIT` trap to always decrement; do not call `redis-cli DEL
+system:maintenance` manually unless clearing a stale key after an aborted SSH session.
+
 > **Warning:** `deploy-web-prod.sh` rebuilds only the `web` container and
 > silently leaves backend services on the old image.
 

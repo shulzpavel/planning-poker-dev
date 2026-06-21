@@ -38,14 +38,23 @@ DEPLOY_SERVICE="$SERVICE"
 DEPLOY_SCOPE="single service"
 export DEPLOY_SERVICE DEPLOY_SCOPE
 
+DEPLOY_MAINTENANCE_HELD=0
+
+deploy_maintenance_release() {
+  if [[ "${DEPLOY_MAINTENANCE_HELD:-0}" == "1" ]]; then
+    deploy_maintenance_disable "$ROOT_DIR" "$COMPOSE_FILE" "$ENV_FILE"
+    DEPLOY_MAINTENANCE_HELD=0
+  fi
+}
+
 notify_failure() {
   local exit_code=$?
-  deploy_maintenance_disable "$ROOT_DIR" "$COMPOSE_FILE" "$ENV_FILE"
   deploy_notify_send "FAILED" "Сервис: ${SERVICE}. Exit code: ${exit_code}" "$ROOT_DIR"
   exit "$exit_code"
 }
 
 trap notify_failure ERR
+trap deploy_maintenance_release EXIT
 
 deploy_acquire_lock "$ROOT_DIR"
 
@@ -58,6 +67,7 @@ echo "Pulling ${REPO_NAME}..."
 deploy_sync_repo_main "$REPO_DIR"
 
 deploy_maintenance_enable "$ROOT_DIR" "$SERVICE" "$COMPOSE_FILE" "$ENV_FILE"
+DEPLOY_MAINTENANCE_HELD=1
 
 echo "Building ${SERVICE}..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build "$SERVICE"
@@ -82,8 +92,6 @@ if [[ "$SERVICE" == "voting-service" || "$SERVICE" == "jira-service" ]]; then
 fi
 
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps "$SERVICE"
-
-deploy_maintenance_disable "$ROOT_DIR" "$COMPOSE_FILE" "$ENV_FILE"
 
 deploy_notify_send "OK" "Образ собран, контейнер ${SERVICE} перезапущен." "$ROOT_DIR"
 echo "Done."

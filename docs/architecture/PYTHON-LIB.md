@@ -1,6 +1,6 @@
 # Shared Python library delivery
 
-**Decision:** `planning-poker-python-lib` is installed via **git tag** in service Dockerfiles and `requirements.txt`. Private PyPI is not used.
+**Decision:** `planning-poker-python-lib` is installed via **GitHub tarball tag** in `requirements.txt`. Private PyPI is not used. **Do not use `git+https://` in Docker** — slim images have no `git` binary and builds fail silently or at pip install.
 
 ## Package
 
@@ -15,19 +15,21 @@
 planning-poker-common @ https://github.com/shulzpavel/planning-poker-python-lib/archive/refs/tags/v0.1.2.tar.gz
 ```
 
-Docker build (multi-stage or build-arg):
+Docker build — same tarball URL as in `requirements.txt` (no separate `RUN pip install git+https`):
 
 ```dockerfile
-ARG COMMON_LIB_REF=v0.1.0
-RUN pip install "planning-poker-common @ git+https://github.com/shulzpavel/planning-poker-python-lib@${COMMON_LIB_REF}"
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 ```
+
+After any Dockerfile or `requirements.txt` change, run `docker build` locally (or rely on CI `docker` job) before push.
 
 ## Release process
 
 1. Merge changes to `planning-poker-python-lib` main.
 2. Tag `v0.x.y` on GitHub.
-3. Bump pin in jira-service and voting-service in the **same release train** when scope domain changes.
-4. CI: lib repo runs pytest; service repos run integration tests against pinned tag.
+3. Bump tarball URL in jira-service and voting-service in the **same release train** when scope domain changes.
+4. CI: lib repo runs pytest; service repos run `docker build` + `import planning_poker_common` smoke check.
 
 ## Why not copy-paste
 
