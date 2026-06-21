@@ -3,6 +3,8 @@
 VOTING_DIR := ../planning-poker-voting-service
 JIRA_DIR := ../planning-poker-jira-service
 WEB_DIR := ../planning-poker-web
+COMMON_LIB_DIR := ../planning-poker-python-lib
+BACKEND_PYTHONPATH := $(VOTING_DIR):$(JIRA_DIR):$(COMMON_LIB_DIR)
 
 install:
 	pip3 install -r $(VOTING_DIR)/requirements.txt
@@ -10,13 +12,13 @@ install:
 
 test: backend-test frontend-test
 
-backend-test: voting-test jira-test
+backend-test: install voting-test jira-test
 
 voting-test:
-	PYTHONPATH=$(VOTING_DIR) python3 -m pytest -q -p no:cacheprovider $(VOTING_DIR)/tests
+	PYTHONPATH=$(BACKEND_PYTHONPATH) python3 -m pytest -q -p no:cacheprovider $(VOTING_DIR)/tests
 
 jira-test:
-	PYTHONPATH=$(JIRA_DIR) python3 -m pytest -q -p no:cacheprovider $(JIRA_DIR)/tests
+	PYTHONPATH=$(BACKEND_PYTHONPATH) python3 -m pytest -q -p no:cacheprovider $(JIRA_DIR)/tests
 
 frontend-test:
 	cd $(WEB_DIR) && npm run test
@@ -28,8 +30,8 @@ frontend-build:
 	cd $(WEB_DIR) && npm run build
 
 check: backend-test frontend-test frontend-build
-	PYTHONPATH=$(VOTING_DIR) python3 -m compileall -q $(VOTING_DIR)/app $(VOTING_DIR)/services $(VOTING_DIR)/config.py $(VOTING_DIR)/session_store.py
-	PYTHONPATH=$(JIRA_DIR) python3 -m compileall -q $(JIRA_DIR)/app $(JIRA_DIR)/services $(JIRA_DIR)/config.py $(JIRA_DIR)/jira_fields.py
+	PYTHONPATH=$(BACKEND_PYTHONPATH) python3 -m compileall -q $(VOTING_DIR)/app $(VOTING_DIR)/services $(VOTING_DIR)/config.py $(VOTING_DIR)/session_store.py
+	PYTHONPATH=$(BACKEND_PYTHONPATH) python3 -m compileall -q $(JIRA_DIR)/app $(JIRA_DIR)/services $(JIRA_DIR)/config.py $(JIRA_DIR)/jira_fields.py
 	docker compose config >/tmp/planning-poker-compose.yml
 	docker compose -f docker-compose.prod.yml --env-file infra/deploy/prod.env.example config >/tmp/planning-poker-prod-compose.yml
 
