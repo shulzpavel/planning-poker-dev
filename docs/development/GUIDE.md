@@ -73,10 +73,13 @@ Rules:
 
 - List/card primary CTA: `intent="open"` (mobile + desktop).
 - List destructive secondary: `intent="delete" size="sm"`.
+- **`intent="delete"` always opens a built-in `ConfirmDialog`** («Точно удалить?» by default). New delete buttons get protection automatically — no manual wiring.
+- Override copy per entity: `confirmTitle`, `confirmDescription`, `confirmLabel`.
+- Stronger custom flow (e.g. hard delete with typed name): `skipDeleteConfirm` + own `ConfirmDialog`.
 - Footer/form save: `intent="save"` or `intent="create"` depending on mode.
 - Reserve raw `variant="ghost"` only for non-action chrome (icon toggles inside custom widgets) — prefer `intent="more"` for tertiary controls.
 
-`SheetActionButton` reuses the same intent map via `resolveButtonVariant`.
+`SheetActionButton` passes `intent` through to `Button` — delete confirmation applies there too.
 
 ### Deploy
 
