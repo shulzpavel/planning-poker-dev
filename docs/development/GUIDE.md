@@ -58,6 +58,26 @@ Bottom sheet gestures (`BottomSheet`, CMS/manager menus):
 
 When adding a new CMS list screen, keep desktop `SectionHeader` + table in `hidden lg:block` and mirror the list with `MobileFeatureCard` in a `lg:hidden` grid. Pass `onActivate` on cards so tapping the title opens the record.
 
+### Button intents (`Button`, `SheetActionButton`)
+
+Use semantic `intent` instead of raw `variant` for actions. Mapping lives in `src/design-system/components.tsx` (`resolveButtonVariant`).
+
+| Intent | Variant | Use for |
+|---|---|---|
+| `open`, `create`, `add`, `save`, `apply`, `primary` | primary (blue) | Open record, create entity, persist form |
+| `success` | success (green) | Confirm positive bulk action |
+| `back`, `cancel`, `neutral`, `refresh`, `reset`, `edit`, `more` | secondary | Dismiss, filter reset, Jira refresh, reorder, pagination |
+| `delete`, `danger`, `finish` | danger (red) | Delete, finish session, destructive confirm |
+
+Rules:
+
+- List/card primary CTA: `intent="open"` (mobile + desktop).
+- List destructive secondary: `intent="delete" size="sm"`.
+- Footer/form save: `intent="save"` or `intent="create"` depending on mode.
+- Reserve raw `variant="ghost"` only for non-action chrome (icon toggles inside custom widgets) — prefer `intent="more"` for tertiary controls.
+
+`SheetActionButton` reuses the same intent map via `resolveButtonVariant`.
+
 ### Deploy
 
 | Change in | Deploy |
