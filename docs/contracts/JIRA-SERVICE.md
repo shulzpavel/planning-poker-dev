@@ -145,6 +145,30 @@ Per-role SP:
 
 Field IDs from env: `STORY_POINTS_FIELD`, `JIRA_SP_*_FIELD`.
 
+### PUT `/issue/{key}/story-points/tracks` *(preferred for voting-service)*
+
+Semantic track keys — field mapping stays in jira-service (`jira_fields.py`):
+
+```json
+{
+  "issue_key": "FLEX-123",
+  "tracks": { "dev": 5, "test": 3, "front": 2 }
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "issue_key": "FLEX-123",
+  "results": { "dev": true, "test": true, "front": false },
+  "skipped_tracks": []
+}
+```
+
+`skipped_tracks` lists tracks whose env field is unset. `PUT /story-points/fields` remains for raw customfield IDs (legacy).
+
 ### PUT `/issue/{key}/due-date`
 
 ```json

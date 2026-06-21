@@ -29,7 +29,7 @@ frontend-build:
 
 check: backend-test frontend-test frontend-build
 	PYTHONPATH=$(VOTING_DIR) python3 -m compileall -q $(VOTING_DIR)/app $(VOTING_DIR)/services $(VOTING_DIR)/config.py $(VOTING_DIR)/session_store.py
-	PYTHONPATH=$(JIRA_DIR) python3 -m compileall -q $(JIRA_DIR)/app $(JIRA_DIR)/services $(JIRA_DIR)/config.py
+	PYTHONPATH=$(JIRA_DIR) python3 -m compileall -q $(JIRA_DIR)/app $(JIRA_DIR)/services $(JIRA_DIR)/config.py $(JIRA_DIR)/jira_fields.py
 	docker compose config >/tmp/planning-poker-compose.yml
 	docker compose -f docker-compose.prod.yml --env-file infra/deploy/prod.env.example config >/tmp/planning-poker-prod-compose.yml
 
