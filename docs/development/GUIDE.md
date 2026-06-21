@@ -30,6 +30,28 @@
 4. 401 → redirect login (`clearCmsAuthHint`).
 5. 409 session conflict → refetch + retry once.
 
+### Mobile CMS layout (`< lg`)
+
+Operations screens (planner, scope, retro, sessions) share mobile-only building blocks in `src/features/cms/components/CmsPrimitives.tsx`:
+
+| Primitive | Role |
+|---|---|
+| `MobilePageHero` | Edge-to-edge summary strip with stats and primary action (`lg:hidden`) |
+| `MobileFeatureCard` | List card with accent border, metrics grid, open/delete actions |
+| `MobileFilterBar` | Horizontal scroll wrapper for `TeamFilter` on phone |
+| `MobileMetricTile` | Compact stat tile used inside hero/detail strips |
+
+Navigation:
+
+- Desktop (`lg+`): tab strip in `CmsShell` header.
+- Mobile: `HeaderMenuButton` opens `BottomSheet` with grouped `SheetItem`s; footer actions use `SheetFooterActions` + `SheetActionButton` (logout stays pinned — scroll only the nav list).
+
+Routing:
+
+- Nested CMS URLs (`/cms/scope/:id`, `/cms/planner/new`) must **not** remount the whole CMS shell. Use `resolveCmsSectionKey()` / `resolveAppTransitionKey()` from `navigation.ts` as the `RouteTransition` key (see `CmsShell.tsx`, `App.tsx`).
+
+When adding a new CMS list screen, keep desktop `SectionHeader` + table in `hidden lg:block` and mirror the list with `MobileFeatureCard` in a `lg:hidden` grid. Pass `onActivate` on cards so tapping the title opens the record.
+
 ### Deploy
 
 | Change in | Deploy |
