@@ -102,7 +102,7 @@ docker compose up -d postgres redis jira-service voting-service web
 | http://localhost:8001/health/ready | jira readiness |
 
 ```bash
-make check   # backend + frontend + build + compose validate
+make check   # voting + jira pytest, compileall, web test/build, compose validate
 ```
 
 ---

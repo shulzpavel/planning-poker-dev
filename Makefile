@@ -1,24 +1,35 @@
-.PHONY: test backend-test frontend-test frontend-e2e frontend-build check install clean deploy-web-prod
+.PHONY: test backend-test voting-test jira-test frontend-test frontend-e2e frontend-build check install clean deploy-web-prod
+
+VOTING_DIR := ../planning-poker-voting-service
+JIRA_DIR := ../planning-poker-jira-service
+WEB_DIR := ../planning-poker-web
 
 install:
-	pip3 install -r ../planning-poker-voting-service/requirements.txt
+	pip3 install -r $(VOTING_DIR)/requirements.txt
+	pip3 install -r $(JIRA_DIR)/requirements.txt
 
 test: backend-test frontend-test
 
-backend-test:
-	PYTHONPATH=../planning-poker-voting-service python3 -m pytest -q -p no:cacheprovider
+backend-test: voting-test jira-test
+
+voting-test:
+	PYTHONPATH=$(VOTING_DIR) python3 -m pytest -q -p no:cacheprovider $(VOTING_DIR)/tests
+
+jira-test:
+	PYTHONPATH=$(JIRA_DIR) python3 -m pytest -q -p no:cacheprovider $(JIRA_DIR)/tests
 
 frontend-test:
-	cd ../planning-poker-web && npm run test
+	cd $(WEB_DIR) && npm run test
 
 frontend-e2e:
-	cd ../planning-poker-web && npm run test:e2e
+	cd $(WEB_DIR) && npm run test:e2e
 
 frontend-build:
-	cd ../planning-poker-web && npm run build
+	cd $(WEB_DIR) && npm run build
 
 check: backend-test frontend-test frontend-build
-	PYTHONPATH=../planning-poker-voting-service python3 -m compileall -q ../planning-poker-voting-service
+	PYTHONPATH=$(VOTING_DIR) python3 -m compileall -q $(VOTING_DIR)/app $(VOTING_DIR)/services $(VOTING_DIR)/config.py $(VOTING_DIR)/session_store.py
+	PYTHONPATH=$(JIRA_DIR) python3 -m compileall -q $(JIRA_DIR)/app $(JIRA_DIR)/services $(JIRA_DIR)/config.py
 	docker compose config >/tmp/planning-poker-compose.yml
 	docker compose -f docker-compose.prod.yml --env-file infra/deploy/prod.env.example config >/tmp/planning-poker-prod-compose.yml
 

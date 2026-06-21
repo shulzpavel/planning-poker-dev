@@ -9,6 +9,7 @@
 | Делай | Не делай |
 |---|---|
 | Jira calls только через jira-service | `requests`/`aiohttp` напрямую к Atlassian из voting-service |
+| `app/adapters/jira_service_client.py` — единственный Jira adapter в voting | Локальный `JiraHttpClient` / `gitlab_http` в voting-service (удалён) |
 | Бизнес-логику в `app/domain/` | Сложные вычисления metrics в React components |
 | Reuse `app.state.http_session` | Новый `ClientSession` на каждый request |
 | Team scope на каждом CMS endpoint | Endpoints без `assert_record_access` |
@@ -223,10 +224,12 @@ Full list: `.env.example`, `infra/deploy/prod.env.example`.
 ### From planning-poker-dev
 
 ```bash
-make backend-test      # voting-service pytest
+make voting-test       # voting-service pytest
+make jira-test         # jira-service pytest
+make backend-test      # voting + jira pytest
 make frontend-test     # web vitest
 make frontend-e2e      # Playwright
-make check             # all + compose validate
+make check             # backend-test + frontend-test + build + compileall + compose validate
 ```
 
 ### voting-service
