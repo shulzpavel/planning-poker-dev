@@ -90,6 +90,15 @@ Rules:
 | voting-service or jira-service | `deploy-prod.sh` (full stack default) |
 | scope CMS behavior (backend + web) | **both** voting-service + web |
 
+**Docker / requirements**
+
+- Shared lib: tarball URL in `requirements.txt` only — never `git+https://` in Docker (see [PYTHON-LIB.md](../architecture/PYTHON-LIB.md)).
+- After Dockerfile or `requirements.txt` change: run `docker build` locally before push; CI also runs `docker build` + `import planning_poker_common` smoke check.
+
+**Maintenance banner during deploy**
+
+Parallel `deploy-service-prod.sh` (jira + voting) uses Redis ref-count (`system:maintenance:refcount`). Banner stays until the last deploy finishes or any deploy exits (success or failure). See [PRODUCTION.md](../../infra/deploy/PRODUCTION.md).
+
 ---
 
 ## Где менять код
