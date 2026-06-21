@@ -60,6 +60,7 @@ HTTP session — singleton `app.state.http_session` (aiohttp pool). **Не со�
 | `GET /health/` | `{status: "healthy", service: "voting-service", version: "1.0.0"}` |
 | `GET /health/ready` | `{status: "ready"}` (200) или `{status: "not_ready", error}` (**503**) — **PING** на `app.state.web_redis`, **SELECT 1** на `repository`/`cms_store` pools; не создаёт новые адаптеры |
 | `GET /health/live` | `{status: "alive"}` |
+| `GET /metrics/` | Postgres CMS counters: `sessions_count`, `active_sessions`, `total_votes`, `postgres_ready` |
 
 ### Ограничения
 
@@ -102,6 +103,8 @@ HTTP session — singleton `app.state.http_session` (aiohttp pool). **Не со�
 ```
 
 HTTP 503 если Jira не сконфигурирован. Readiness проверяет singleton `app.state.jira_client` (`is_ready()`), **без** `JiraServiceClient()`/`close()` на каждый probe.
+
+`GET /metrics/` — in-process cache: `cache_size`, `cache_hits`, `cache_misses`, `inflight_requests`, `ready`.
 
 ### Ограничения
 
