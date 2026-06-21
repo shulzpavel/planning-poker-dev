@@ -50,6 +50,12 @@ Routing:
 
 - Nested CMS URLs (`/cms/scope/:id`, `/cms/planner/new`) must **not** remount the whole CMS shell. Use `resolveCmsSectionKey()` / `resolveAppTransitionKey()` from `navigation.ts` as the `RouteTransition` key (see `CmsShell.tsx`, `App.tsx`).
 
+Bottom sheet gestures (`BottomSheet`, CMS/manager menus):
+
+- Motion math lives in `src/design-system/sheetMotion.ts` (durations/easing from `motionTokens`, thresholds as ratios of sheet height).
+- Drag + enter/close animation is centralized in `useBottomSheetDrag.ts` with window-level `pointermove`/`pointerup` listeners — do not reimplement per screen.
+- Mobile: slide up on open, drag handle + title zone to dismiss, backdrop dims with drag offset. Desktop (`md+`): centered dialog with scale-in only.
+
 When adding a new CMS list screen, keep desktop `SectionHeader` + table in `hidden lg:block` and mirror the list with `MobileFeatureCard` in a `lg:hidden` grid. Pass `onActivate` on cards so tapping the title opens the record.
 
 ### Deploy
