@@ -13,5 +13,4 @@ clone() {
 clone planning-poker-jira-service
 clone planning-poker-voting-service
 clone planning-poker-web
-clone planning-poker-python-lib
 clone planning-poker-dev

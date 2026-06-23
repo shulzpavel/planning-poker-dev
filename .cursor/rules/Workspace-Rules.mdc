@@ -1,36 +1,60 @@
 ---
-description: Planning Poker microservices workspace map and repo routing
-alwaysApply: true
+description: planning-poker-dev repo rules: workspace map, docs, infra, CI and deploy ownership
+globs: "**/*"
+alwaysApply: false
 ---
 
-# Workspace Rules
+# Workspace Rules - planning-poker-dev
 
-## Active workspace
+## Responsibility
 
-This is the **Planning Poker microservices** workspace. Prefer these repos over the legacy monorepo.
+`planning-poker-dev` owns local orchestration, Docker Compose, Caddy, deploy scripts, CI notify workflows and canonical documentation for the microservices stack. It must not contain application business logic.
 
-| Folder | Repo | Responsibility |
+## Workspace Map
+
+| Cursor folder | Repo path | Responsibility |
 |---|---|---|
-| `dev/` | planning-poker-dev | docker compose, deploy scripts, infra, CI notify workflows |
-| `voting-service/` | planning-poker-voting-service | CMS API, scope board runtime, sessions, RBAC, Postgres |
-| `jira-service/` | planning-poker-jira-service | Jira search/writes, scope_board tests |
-| `web/` | planning-poker-web | React/Vite UI (`/cms`, `/manage`, voting links) |
+| `dev` | `planning-poker-dev` | Compose, deploy, CI, docs |
+| `web` | `planning-poker-web` | React/Vite SPA |
+| `voting-service` | `planning-poker-voting-service` | CMS, sessions, RBAC, scope, retro, AI |
+| `jira-service` | `planning-poker-jira-service` | Jira/GitLab adapter |
+| not listed | `vendor/planning-poker-common/` in jira + voting | Shared pure Python (`planning_poker_common`) |
 
-## Legacy
+Legacy `telegram_pb` is not used in production and must not be edited without explicit user request.
 
-- `telegram_pb` is **legacy monorepo** — do not edit unless the user explicitly asks.
-- Production deploys run from the repos above, not from `telegram_pb`.
+## Canonical Docs
 
-## Where to change code
+- Start here: `docs/TECHNICAL.md`.
+- Service boundaries: `docs/architecture/SERVICES.md`.
+- Auth/RBAC: `docs/architecture/AUTH.md`.
+- Data/storage: `docs/architecture/DATA.md`.
+- API contracts: `docs/contracts/**`.
+- Developer practices: `docs/development/GUIDE.md`.
+- List pagination: `docs/development/LISTS.md`.
+- Shared lib pin/release: `docs/architecture/PYTHON-LIB.md`.
+- Production deploy: `infra/deploy/PRODUCTION.md`.
 
-- `/cms/scope` UI: `web/src/features/cms/scope/**`
-- Scope metrics / alerts backend: `voting-service/app/domain/scope_board.py`
-- Scope tests: `jira-service/tests/test_scope_board.py`
-- Deploy / Telegram CI alerts: `dev/infra/deploy/**`, `dev/.github/workflows/**`
-- Service CI: each repo's `.github/workflows/ci.yml`
+Update docs in this repo whenever behavior, API, env/config, deploy workflow, service boundary or shared-lib process changes.
 
-## Conventions
+## Where To Change Infra
 
-- Commit and deploy from the **service repo** that owns the code.
-- Shared deploy logic lives in `planning-poker-dev`; service repos call reusable workflows from there.
-- After backend + web changes, deploy both `voting-service` and `web` when scope/CMS behavior changes.
+| Change | Path |
+|---|---|
+| Compose stack | `docker-compose.yml`, `docker-compose.prod.yml` |
+| Caddy/reverse proxy | `infra/caddy/**` |
+| Production deploy scripts | `infra/deploy/**` |
+| CI notify workflows | `.github/workflows/ci-notify-*.yml` |
+| Stack validation | `Makefile`, `.github/workflows/ci.yml` |
+| Reference k8s manifests | `infra/k8s/**` |
+
+## Verification
+
+- Docs-only changes: validate links/paths and final diff.
+- Compose changes: run `docker compose config`.
+- CI/deploy/script changes: run the narrow script validation available locally and then `make check` when practical.
+- Cross-service contract changes: run `make test` from this repo.
+- Broad stack changes: run `make check` from this repo.
+
+## Deploy
+
+Deploy only on explicit user request. Use the production runbook in `infra/deploy/PRODUCTION.md`; do not infer deploy from merge, push or PR creation.

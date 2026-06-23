@@ -3,8 +3,9 @@
 VOTING_DIR := ../planning-poker-voting-service
 JIRA_DIR := ../planning-poker-jira-service
 WEB_DIR := ../planning-poker-web
-COMMON_LIB_DIR := ../planning-poker-python-lib
-BACKEND_PYTHONPATH := $(VOTING_DIR):$(JIRA_DIR):$(COMMON_LIB_DIR)
+VOTING_VENDOR := $(VOTING_DIR)/vendor/planning-poker-common
+JIRA_VENDOR := $(JIRA_DIR)/vendor/planning-poker-common
+BACKEND_PYTHONPATH := $(VOTING_VENDOR):$(JIRA_VENDOR):$(VOTING_DIR):$(JIRA_DIR)
 
 install:
 	pip3 install -r $(VOTING_DIR)/requirements.txt
