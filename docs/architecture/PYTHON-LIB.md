@@ -2,11 +2,12 @@
 
 **Decision:** `planning_poker_common` is **vendored** into each backend service at `vendor/planning-poker-common/` and loaded via **`PYTHONPATH`** — no GitHub tarball, no private PyPI, no tokens at build time.
 
+The standalone repo [planning-poker-python-lib](https://github.com/shulzpavel/planning-poker-python-lib) is **archived** (read-only history). Do not clone or depend on it.
+
 ## Package
 
 - Import path: `planning_poker_common`
 - Stdlib-only pure modules: `jira/text`, `jira/role_contributors`, `scope/domain`, `scope/team_questions`, `ports/jira_client`
-- Optional upstream sandbox: [planning-poker-python-lib](https://github.com/shulzpavel/planning-poker-python-lib) (not required for clone/build/deploy)
 
 ## Layout (both backend services)
 
@@ -48,23 +49,17 @@ make backend-test
 
 ## Sync after domain changes
 
-1. Edit and test in `planning-poker-python-lib` **or** directly in one service `vendor/`.
-2. Copy the same tree into **both** services (keep copies identical):
+1. Edit `vendor/planning-poker-common/planning_poker_common/` in **one** backend service; run pytest there.
+2. Copy the same tree into the other service (default source: jira vendor):
 
 ```bash
 cd planning-poker-dev
 ./scripts/sync-vendor-common.sh
+# or, if you edited voting-service copy:
+SRC=../planning-poker-voting-service/vendor/planning-poker-common ./scripts/sync-vendor-common.sh
 ```
 
 3. Run `make backend-test` and `docker build` in both services before merge.
-
-## `planning-poker-python-lib` repo — delete?
-
-**Not required for production.** After vendoring:
-
-- **Do not delete** until both services are merged and deployed with `vendor/`.
-- **Optional:** archive the GitHub repo later, or keep it as a scratchpad for domain edits + `sync-vendor-common.sh`.
-- **Remove** from `clone-all.sh` for new developers — lib ships inside jira/voting repos.
 
 ## Why vendor
 

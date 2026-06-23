@@ -92,7 +92,7 @@ Rules:
 
 **Docker / requirements**
 
-- Shared lib: vendored under `vendor/planning-poker-common/` in each backend service; sync via `scripts/sync-vendor-common.sh` (see [PYTHON-LIB.md](../architecture/PYTHON-LIB.md)).
+- Shared lib: vendored under `vendor/planning-poker-common/`; sync via `scripts/sync-vendor-common.sh` (see [PYTHON-LIB.md](../architecture/PYTHON-LIB.md)). Standalone `planning-poker-python-lib` repo is archived.
 - After Dockerfile or `requirements.txt` change: run `docker build` locally before push; CI also runs `docker build` + `import planning_poker_common` smoke check.
 
 **Maintenance banner during deploy**

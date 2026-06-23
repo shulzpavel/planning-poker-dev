@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# Copy planning_poker_common from an upstream checkout into both backend services.
+# Keep vendored planning_poker_common identical in jira-service and voting-service.
+#
 # Usage:
 #   ./scripts/sync-vendor-common.sh
-#   SRC=/path/to/planning-poker-python-lib ./scripts/sync-vendor-common.sh
+#   SRC=../planning-poker-voting-service/vendor/planning-poker-common ./scripts/sync-vendor-common.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PARENT="$(dirname "$ROOT")"
-SRC="${SRC:-$PARENT/planning-poker-python-lib}"
+SRC="${SRC:-$PARENT/planning-poker-jira-service/vendor/planning-poker-common}"
 
 if [[ ! -d "$SRC/planning_poker_common" ]]; then
   echo "error: planning_poker_common not found under $SRC" >&2
-  echo "Set SRC to a checkout of planning-poker-python-lib or edit domain in vendor/ directly." >&2
+  echo "Edit vendor/ in one backend service, then run with SRC pointing at that copy." >&2
   exit 1
 fi
 

@@ -52,7 +52,7 @@ Sibling layout under one parent directory:
   planning-poker-web/
 ```
 
-Optional upstream for domain edits: `planning-poker-python-lib/` + `./scripts/sync-vendor-common.sh` ([PYTHON-LIB.md](docs/architecture/PYTHON-LIB.md)).
+Domain sync between backend services: `./scripts/sync-vendor-common.sh` ([PYTHON-LIB.md](docs/architecture/PYTHON-LIB.md)). The old `planning-poker-python-lib` repo is **archived** on GitHub.
 
 ## Quick start
 
