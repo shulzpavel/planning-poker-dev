@@ -32,7 +32,7 @@ Caddy (HTTPS, VPN allowlist, WebSocket proxy)
     └── /api/v1/ws/*   → voting-service :8002
 
 voting-service
-    ├── Postgres     cms_* read model, RBAC, scope boards, retros, sprint plans
+    ├── Postgres     cms_* read model, RBAC, scope boards, retros, sprint plans, standups
     ├── Redis        live sessions, web tokens, pub/sub, AI jobs, rate limits
     ├── jira-service :8001   (единственный путь к Jira REST)
     ├── Anthropic    task / scope / retro AI
@@ -134,6 +134,7 @@ make check   # voting + jira pytest, compileall, web test/build, compose validat
 | Manager cockpit API | `voting-service/services/voting_service/app_api.py` |
 | Public voting + WS | `voting-service/services/voting_service/web_api.py` |
 | Retro API | `voting-service/services/voting_service/retro_api.py` |
+| Standups API | `voting-service/services/voting_service/cms/standups.py` |
 | Auth / shared models | `voting-service/services/voting_service/_http_shared.py` |
 | RBAC | `voting-service/services/voting_service/cms_rbac.py` |
 | Team scope | `voting-service/services/voting_service/cms_team_access.py` |

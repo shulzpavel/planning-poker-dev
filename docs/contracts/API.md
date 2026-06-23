@@ -183,6 +183,22 @@ Scope create/update body: см. [SCOPE-BOARD.md](./SCOPE-BOARD.md).
 | GET | `/cms/users` | `cms.users.view` |
 | DELETE | `/cms/users/{id}` | `cms.web_participants.delete` + confirm_name + team scope |
 
+### Standups (daily records)
+
+Один опубликованный дейлик на команду в день. Payload: roster участников + work items по трекам `yesterday` / `today` / `blocker` (ручной текст задачи, опциональный Jira key, локальный срок, статус, комментарий). Срок из прошлых дейликов — подсказка через lookup, не автозаполнение.
+
+| Method | Path | Permission |
+|---|---|---|
+| GET/PUT | `/cms/standup-rosters/{team_id}` | view / `cms.standups.manage` |
+| GET/POST | `/cms/standups` | `cms.standups.view` / manage |
+| GET/PATCH/DELETE | `/cms/standups/{id}` | view / manage |
+| POST | `/cms/standups/{id}/sync-roster` | manage (409 если published) |
+| POST | `/cms/standups/{id}/publish` | manage |
+| GET | `/cms/standups/local-due-hints/{issue_key}` | view (`team_id`, `before` query) |
+| GET | `/cms/standups/jira-issues/{issue_key}` | view (summary из Jira) |
+
+UI: `web/src/features/cms/standups/`, route `/cms/standups`.
+
 ---
 
 ## retro_router
@@ -239,6 +255,7 @@ Scope create/update body: см. [SCOPE-BOARD.md](./SCOPE-BOARD.md).
 | `cmsAuthApi` | `/cms/auth/*` |
 | `cmsScopeApi` | `/cms/scope-boards/*` |
 | `cmsRetroApi` | `/cms/retros/*` |
+| `cmsStandupsApi` | `/cms/standups/*`, `/cms/standup-rosters/*` |
 | `cmsPlannerApi` | `/cms/sprint-plans/*` |
 | `cmsAccessApi` | `/cms/access/*` |
 | `cmsTasksApi` | `/cms/sessions/{id}/tasks/*` |
