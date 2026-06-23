@@ -92,7 +92,7 @@ Rules:
 
 **Docker / requirements**
 
-- Shared lib: tarball URL in `requirements.txt` only — never `git+https://` in Docker (see [PYTHON-LIB.md](../architecture/PYTHON-LIB.md)).
+- Shared lib: vendored under `vendor/planning-poker-common/` in each backend service; sync via `scripts/sync-vendor-common.sh` (see [PYTHON-LIB.md](../architecture/PYTHON-LIB.md)).
 - After Dockerfile or `requirements.txt` change: run `docker build` locally before push; CI also runs `docker build` + `import planning_poker_common` smoke check.
 
 **Maintenance banner during deploy**

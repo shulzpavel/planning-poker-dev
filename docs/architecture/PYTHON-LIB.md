@@ -1,40 +1,75 @@
 # Shared Python library delivery
 
-**Decision:** `planning-poker-python-lib` is installed via **GitHub tarball tag** in `requirements.txt`. Private PyPI is not used. **Do not use `git+https://` in Docker** — slim images have no `git` binary and builds fail silently or at pip install.
+**Decision:** `planning_poker_common` is **vendored** into each backend service at `vendor/planning-poker-common/` and loaded via **`PYTHONPATH`** — no GitHub tarball, no private PyPI, no tokens at build time.
 
 ## Package
 
-- Repo: [shulzpavel/planning-poker-python-lib](https://github.com/shulzpavel/planning-poker-python-lib) — **current pin: `v0.1.2`**
 - Import path: `planning_poker_common`
-- Stdlib-only pure modules: `jira/text`, `jira/role_contributors`, `scope/domain`, `ports/jira_client`
+- Stdlib-only pure modules: `jira/text`, `jira/role_contributors`, `scope/domain`, `scope/team_questions`, `ports/jira_client`
+- Optional upstream sandbox: [planning-poker-python-lib](https://github.com/shulzpavel/planning-poker-python-lib) (not required for clone/build/deploy)
 
-## Pinning
+## Layout (both backend services)
 
 ```text
-# requirements.txt (both backend services)
-planning-poker-common @ https://github.com/shulzpavel/planning-poker-python-lib/archive/refs/tags/v0.1.2.tar.gz
+vendor/planning-poker-common/
+  pyproject.toml          # metadata only; not installed in Docker/CI
+  planning_poker_common/
+    jira/
+    scope/
+    ports/
 ```
 
-Docker build — same tarball URL as in `requirements.txt` (no separate `RUN pip install git+https`):
+Service code may re-export via `app/domain/scope_board.py`, `app/utils/jira_text.py`, etc.
+
+## Runtime / Docker
 
 ```dockerfile
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY vendor/planning-poker-common/ ./vendor/planning-poker-common/
+ENV PYTHONPATH=/app/vendor/planning-poker-common:/app
 ```
 
-After any Dockerfile or `requirements.txt` change, run `docker build` locally (or rely on CI `docker` job) before push.
+`requirements.txt` does **not** reference the vendor tree — only third-party deps.
 
-## Release process
+## Local tests
 
-1. Merge changes to `planning-poker-python-lib` main.
-2. Tag `v0.x.y` on GitHub.
-3. Bump tarball URL in jira-service and voting-service in the **same release train** when scope domain changes.
-4. CI: lib repo runs pytest; service repos run `docker build` + `import planning_poker_common` smoke check.
+From a service repo:
 
-## Why not copy-paste
+```bash
+PYTHONPATH=vendor/planning-poker-common:. python3 -m pytest -q
+```
 
-Duplicate `scope_board.py` and `jira_text.py` between services drift within weeks. Git tag keeps a single source without operating PyPI.
+From `planning-poker-dev`:
 
-## scope_board merge rule (PR-9)
+```bash
+make backend-test
+```
 
-Before extract to lib: **union** both copies — jira-service enrichment/retry/start_date/significance + voting queue/significance helpers. Do not take jira-only snapshot.
+`make backend-test` sets `PYTHONPATH` to both vendor trees automatically.
+
+## Sync after domain changes
+
+1. Edit and test in `planning-poker-python-lib` **or** directly in one service `vendor/`.
+2. Copy the same tree into **both** services (keep copies identical):
+
+```bash
+cd planning-poker-dev
+./scripts/sync-vendor-common.sh
+```
+
+3. Run `make backend-test` and `docker build` in both services before merge.
+
+## `planning-poker-python-lib` repo — delete?
+
+**Not required for production.** After vendoring:
+
+- **Do not delete** until both services are merged and deployed with `vendor/`.
+- **Optional:** archive the GitHub repo later, or keep it as a scratchpad for domain edits + `sync-vendor-common.sh`.
+- **Remove** from `clone-all.sh` for new developers — lib ships inside jira/voting repos.
+
+## Why vendor
+
+Private GitHub repos need token plumbing in CI/Docker; tarball URLs fail on auth and show up in build logs. Vendoring removes network/auth from the critical path.
+
+## scope_board merge rule
+
+Before syncing: **union** jira enrichment/retry/start_date/significance + voting queue/significance helpers. Do not take a jira-only snapshot.

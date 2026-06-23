@@ -12,7 +12,7 @@ Production: `https://planning.shults-sync.com`
 | [planning-poker-voting-service](https://github.com/shulzpavel/planning-poker-voting-service) | Sessions, CMS/RBAC, scope, retro, AI |
 | [planning-poker-jira-service](https://github.com/shulzpavel/planning-poker-jira-service) | Stateless Jira adapter |
 | [planning-poker-web](https://github.com/shulzpavel/planning-poker-web) | React/Vite SPA |
-| [planning-poker-python-lib](https://github.com/shulzpavel/planning-poker-python-lib) | Shared pure Python (`planning_poker_common`) |
+| `planning_poker_common` | vendored in jira + voting (`vendor/planning-poker-common/`) |
 
 Legacy monorepo `telegram_pb` is **not** used in production.
 
@@ -24,7 +24,7 @@ Legacy monorepo `telegram_pb` is **not** used in production.
 | [docs/architecture/SERVICES.md](docs/architecture/SERVICES.md) | Service boundaries and forbidden cross-calls |
 | [docs/contracts/](docs/contracts/) | HTTP, scope board, Jira, WebSocket/AI, sessions |
 | [docs/development/GUIDE.md](docs/development/GUIDE.md) | Best practices, errors, testing, list pagination |
-| [docs/architecture/PYTHON-LIB.md](docs/architecture/PYTHON-LIB.md) | Shared lib pinning (tarball in Docker) |
+| [docs/architecture/PYTHON-LIB.md](docs/architecture/PYTHON-LIB.md) | Shared lib vendored in backend services |
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Product features |
 | [infra/deploy/PRODUCTION.md](infra/deploy/PRODUCTION.md) | Production deploy runbook |
 
@@ -50,8 +50,9 @@ Sibling layout under one parent directory:
   planning-poker-voting-service/
   planning-poker-jira-service/
   planning-poker-web/
-  planning-poker-python-lib/
 ```
+
+Optional upstream for domain edits: `planning-poker-python-lib/` + `./scripts/sync-vendor-common.sh` ([PYTHON-LIB.md](docs/architecture/PYTHON-LIB.md)).
 
 ## Quick start
 

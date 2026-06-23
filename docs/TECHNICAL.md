@@ -56,7 +56,7 @@ jira-service
 | `planning-poker-web` | 3001 / 5173 | React/Vite SPA |
 | `planning-poker-voting-service` | 8002 | Sessions, CMS, scope, retro, AI |
 | `planning-poker-jira-service` | 8001 | Stateless Jira adapter |
-| `planning-poker-python-lib` | — | Shared pure Python (`planning_poker_common`) |
+| `planning_poker_common` | — | Vendored in jira + voting (`vendor/planning-poker-common/`) |
 | `planning-poker-dev` | — | Compose, Caddy, deploy, CI |
 
 Legacy `telegram_pb` — не используется в prod.

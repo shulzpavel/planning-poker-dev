@@ -18,7 +18,7 @@ alwaysApply: false
 | `web` | `planning-poker-web` | React/Vite SPA |
 | `voting-service` | `planning-poker-voting-service` | CMS, sessions, RBAC, scope, retro, AI |
 | `jira-service` | `planning-poker-jira-service` | Jira/GitLab adapter |
-| not listed | `planning-poker-python-lib` | Shared pure Python library |
+| not listed | `vendor/planning-poker-common/` in jira + voting | Shared pure Python (`planning_poker_common`) |
 
 Legacy `telegram_pb` is not used in production and must not be edited without explicit user request.
 
