@@ -109,6 +109,7 @@ Close codes: 4004 (bad token), 4503 (store unavailable), 1011.
 |---|---|---|
 | `scope` | `board:{id}` | `POST /cms/scope-boards/{id}/analyze` |
 | `retro` | `retro:{id}` | `POST /cms/retros/{id}/analyze` |
+| `standup` | `standup:{id}` or `standup:{id}:refresh` | auto on first publish; `POST /cms/standups/{id}/analyze` |
 | `session_ai_summary` | `session:{chat_id}:{task_id}[:refresh]` | `POST /app/sessions/.../ai-summary` |
 
 ### Job record (Redis `ai_job:{job_id}`)
@@ -116,7 +117,7 @@ Close codes: 4004 (bad token), 4503 (store unavailable), 1011.
 ```typescript
 {
   job_id: string
-  kind: "scope" | "retro" | "session_ai_summary"
+  kind: "scope" | "retro" | "standup" | "session_ai_summary"
   resource_key: string
   actor: string
   status: "queued" | "running" | "done" | "error"
@@ -148,6 +149,7 @@ Close codes: 4004 (bad token), 4503 (store unavailable), 1011.
 |---|---|
 | scope | `{ ai_summary, board, cached?: boolean }` |
 | retro | `{ ai_summary, cached?: boolean }` |
+| standup | `{ ai_summary, cached?: boolean }` |
 | session | `{ session, cached?: boolean }` |
 
 ### Dedupe
@@ -233,6 +235,10 @@ sequenceDiagram
 | `SCOPE_AI_TIMEOUT_SECONDS` | 60 | scope |
 | `SCOPE_AI_MAX_OUTPUT_TOKENS` | 3600 | |
 | `SCOPE_AI_MAX_CONTEXT_CHARS` | 5600 | |
+| `STANDUP_AI_RATE_MAX` | 20 | standup analyze per actor/hour |
+| `STANDUP_AI_RATE_WINDOW_SECONDS` | 3600 | standup rate window |
+| `TELEGRAM_BOT_TOKEN` | — | standup digest notify |
+| `TELEGRAM_CHAT_ID` | — | standup digest notify |
 | `AI_JOB_TTL_SECONDS` | 3600 | Redis TTL |
 | `AI_JOB_STALE_SECONDS` | 300 | stale detection |
 
