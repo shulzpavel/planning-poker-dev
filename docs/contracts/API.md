@@ -193,9 +193,13 @@ Scope create/update body: см. [SCOPE-BOARD.md](./SCOPE-BOARD.md).
 | GET/POST | `/cms/standups` | `cms.standups.view` / manage |
 | GET/PATCH/DELETE | `/cms/standups/{id}` | view / manage |
 | POST | `/cms/standups/{id}/sync-roster` | manage (409 если published) |
-| POST | `/cms/standups/{id}/publish` | manage |
+| POST | `/cms/standups/{id}/publish` | manage (при первой публикации ставит AI job в очередь) |
+| POST | `/cms/standups/{id}/analyze` | manage (`?async=1`, `?force=1`; только published) |
+| GET | `/cms/standups/{id}/analyze/jobs/{job_id}` | manage (poll AI job) |
 | GET | `/cms/standups/local-due-hints/{issue_key}` | view (`team_id`, `before` query) |
 | GET | `/cms/standups/jira-issues/{issue_key}` | view (summary из Jira) |
+
+Поле `ai_summary` (JSONB) заполняется после LLM-дайджеста: `summary`, `changed`, `unchanged`, `watch`, `done`, `in_progress`, `blockers`, `risks`, `focus`. AI сравнивает с предыдущим опубликованным дейликом команды. При успехе сервер отправляет HTML-сводку в Telegram (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`).
 
 UI: `web/src/features/cms/standups/`, route `/cms/standups`.
 
