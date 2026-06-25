@@ -230,7 +230,10 @@ sequenceDiagram
 | Variable | Default | Notes |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | required |
-| `ANTHROPIC_MODEL` | claude-haiku-4-5-20251001 | |
+| `ANTHROPIC_MODEL` | claude-haiku-4-5-20251001 | all AI jobs (keep Haiku in prod) |
+| `ANTHROPIC_MAX_OUTPUT_TOKENS` | 1200 | task AI summary |
+| `STANDUP_AI_MAX_OUTPUT_TOKENS` | 2800 | standup digest |
+| `RETRO_AI_MAX_OUTPUT_TOKENS` | 2200 | retro analyze |
 | `ANTHROPIC_TIMEOUT_SECONDS` | 20 | task summary |
 | `SCOPE_AI_TIMEOUT_SECONDS` | 60 | scope |
 | `SCOPE_AI_MAX_OUTPUT_TOKENS` | 3600 | |
