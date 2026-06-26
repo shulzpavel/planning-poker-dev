@@ -48,7 +48,7 @@ services:
     restart: unless-stopped
     environment:
       - VOTING_SERVICE_PORT=8002
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - POSTGRES_DSN=${POSTGRES_DSN:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-planning_poker}}
       - STATE_FILE=/data/state.json
       - CMS_USERNAME=${CMS_USERNAME}
