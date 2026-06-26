@@ -1,0 +1,26 @@
+name: Prod remote ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Shell command on production server
+        required: true
+        type: string
+
+jobs:
+  remote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run on production server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: false
+          command_timeout: 9m
+          script: |
+            set -euo pipefail
+            ${{ inputs.command }}
