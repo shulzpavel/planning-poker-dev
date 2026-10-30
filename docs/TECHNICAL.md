@@ -9,7 +9,8 @@
 3. Нужен конкретный endpoint → [contracts/API.md](./contracts/API.md).
 4. Scope board → [contracts/SCOPE-BOARD.md](./contracts/SCOPE-BOARD.md).
 5. WebSocket / AI jobs → [contracts/REALTIME-AI.md](./contracts/REALTIME-AI.md).
-6. Redis / Postgres → [architecture/DATA.md](./architecture/DATA.md).
+6. Продуктовые дэшборды → [contracts/PRODUCT-INTAKE.md](./contracts/PRODUCT-INTAKE.md).
+7. Redis / Postgres → [architecture/DATA.md](./architecture/DATA.md).
 7. Куда писать код, тесты, типичные ошибки → [development/GUIDE.md](./development/GUIDE.md).
 8. Live sessions / voting → [contracts/SESSIONS.md](./contracts/SESSIONS.md).
 
